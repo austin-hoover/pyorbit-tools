@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyorbit-sim"
+version = "0.0.1"
+authors = [
+  { name="Austin Hoover", email="hooveram@ornl.gov" },
+]
+description = "Tools for PyORBIT3 simulations"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/austin-hoover/pyorbit-sim"
