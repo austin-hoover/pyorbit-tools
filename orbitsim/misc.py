@@ -2,9 +2,11 @@ from typing import Tuple
 
 import numpy as np
 
-from orbit.utils.consts import classical_proton_radius
 from orbit.utils.consts import speed_of_light
 from orbit.core.orbit_utils import Matrix
+
+
+CLASSICAL_PROTON_RADIUS = 1.53469e-18  # [m]
 
 
 def orbit_matrix_to_numpy(matrix: Matrix) -> np.ndarray:
@@ -33,11 +35,13 @@ def magnetic_rigidity(mass: float, kin_energy: float) -> float:
 
 def space_charge_perveance(mass: float, kin_energy: float, line_density: float) -> float:
     gamma, beta = lorentz_factors(mass, kin_energy)
+    classical_proton_radius = CLASSICAL_PROTON_RADIUS
     perveance = (2.0 * classical_proton_radius * line_density) / (beta**2 * gamma**3)
     return perveance
 
 
 def intensity_from_perveance(perveance: float, mass: float, kin_energy: float, length: float):
     gamma, beta = lorentz_factors(mass, kin_energy)
+    classical_proton_radius = CLASSICAL_PROTON_RADIUS
     intensity = (beta**2 * gamma**3 * perveance * bunch_length) / (2.0 * classical_proton_radius)
     return intensity

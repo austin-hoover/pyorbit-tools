@@ -79,8 +79,8 @@ def slice_idx(
 def slice(
     points: np.ndarray, 
     axis: Tuple[int] = None, 
-    center: np.ndarray,
-    width: np.ndarray,
+    center: np.ndarray = None,
+    width: np.ndarray = None,
     limits: List[Tuple[float]] = None,
 ) -> np.ndarray:
     idx = slice_idx(points, axis, center=center, width=width, limits=limits)
@@ -117,7 +117,7 @@ def slice_idx_ellipsoid(
     axis: Tuple[int] = None, 
     rmin: float = 0.0, 
     rmax: float = None,
-) -> np.ndarray
+) -> np.ndarray:
     if axis is None:
         axis = np.arange(points.shape[1])
     if rmax is None:
