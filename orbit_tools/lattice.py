@@ -63,14 +63,21 @@ def get_sublattice(
     return lattice.getSubLattice(start_index, stop_index)
 
 
-def split_node(node: AccNode, max_part_length: float = None) -> None:
+def split_node(node: AccNode, max_part_length: float = None) -> AccNode:
     if max_part_length is not None:
         if node.getLength() > max_part_length:
             node.setnParts(1 + int(node.getLength() / max_part_length))
+    return node
 
 
-def set_node_fringe(node: AccNode, setting: bool = False) -> None:
+def set_node_fringe(node: AccNode, setting: bool = False) -> AccNode:
     if hasattr(node, "setFringeFieldFunctionIN"):
-        node.setFringeFieldFunctionIN(lambda node, params_dict: None)    
+        node.setUsageFringeFieldIN(setting)
     if hasattr(node, "setFringeFieldFunctionOUT"):
-        node.setFringeFieldFunctionOUT(lambda node, params_dict: None)    
+        node.setUsageFringeFieldIN(setting)
+    return node
+
+def set_fringe(lattice: AccLattice, setting: bool) -> AccLattice:
+    for node in lattice.getNodes():
+        set_node_fringe(node, setting)
+    return lattice
