@@ -64,10 +64,16 @@ def get_sublattice(
 
 
 def split_node(node: AccNode, max_part_length: float = None) -> AccNode:
-    if max_part_length is not None:
+    if max_part_length is not None and max_part_length > 0.0:
         if node.getLength() > max_part_length:
             node.setnParts(1 + int(node.getLength() / max_part_length))
     return node
+
+
+def split(lattice: AccLattice, max_part_length: float = None) -> AccLattice:
+    for node in lattice.getNodes():
+        split_node(node, max_part_length)
+    return lattice
 
 
 def set_node_fringe(node: AccNode, setting: bool = False) -> AccNode:
