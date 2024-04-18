@@ -48,13 +48,14 @@ def set_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
     return bunch
 
 
-def get_coords(bunch: Bunch) -> np.ndarray:
+def get_coords(bunch: Bunch, size: int) -> np.ndarray:
     """Extract the phase space coordinates from the bunch.
 
     If using MPI, this function will return the particles on one MPI node.
     """
-    coords = np.zeros((bunch.getSize(), 6))
-    for i in range(bunch.getSize()):
+    size = min(size, bunch.getSize())
+    coords = np.zeros((size, 6))
+    for i in range(size):
         coords[i, 0] = bunch.x(i)
         coords[i, 1] = bunch.xp(i)
         coords[i, 2] = bunch.y(i)
@@ -162,11 +163,11 @@ def decorrelate_xy_z(bunch: Bunch, verbose: bool = False) -> Bunch:
 
 
 def downsample(
-        bunch: Bunch,
-        new_size: int,
-        method: str = "first",
-        conserve_intensity: bool =True,
-        verbose: bool = True,
+    bunch: Bunch,
+    new_size: int,
+    method: str = "first",
+    conserve_intensity: bool =True,
+    verbose: bool = True,
 ):
     """Delete a subset of the bunch particles.
 
@@ -230,6 +231,36 @@ def reverse(bunch: Bunch) -> Bunch:
     return bunch
 
 
+def transform(bunch: Bunch, transform: Callable, axis: tuple[int] = None) -> Bunch:
+    if axis is None:
+        axis = list(range(6))
+    axis = list(axis)
+    
+    for i in range(bunch.getSize()):
+        (x, xp) = (bunch.x(i), bunch.xp(i))
+        (y, yp) = (bunch.y(i), bunch.yp(i))
+        (z, de) = (bunch.z(i), bunch.dE(i))
+        
+        vector = np.array([x, xp, y, yp, z, de])
+        vector[axis] = transform(vector[axis])
+        
+        (x, xp, y, yp, z, de) = vector
+        bunch.x(i, x)
+        bunch.y(i, y)
+        bunch.z(i, z)
+        bunch.xp(i, xp)
+        bunch.yp(i, yp)
+        bunch.dE(i, de)
+    return bunch
+
+
+def linear_transform(bunch: Bunch, matrix: np.ndarray, axis: tuple[int] = None) -> Bunch:
+    assert matrix.shape[0] == matrix.shape[1]
+    if axis is None:
+        axis = list(range(matrix.shape[0]))
+    return transform(bunch, lambda x: np.matmul(matrix, x), axis=axis)
+
+
 def get_centroid(bunch: Bunch) -> np.array:
     twiss_analysis = BunchTwissAnalysis()
     twiss_analysis.analyzeBunch(bunch)
@@ -237,7 +268,6 @@ def get_centroid(bunch: Bunch) -> np.array:
 
 
 def shift_centroid(bunch: Bunch, delta: np.ndarray, verbose: bool = False) -> Bunch:
-    """Shift the bunch centroid in phase space."""
     _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
     _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
 
@@ -290,8 +320,7 @@ def get_mean(bunch: Bunch) -> np.array:
     return centroid(bunch)
 
 
-def get_mean_and_cov(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False):
-    """Return bunch covariance matrix (Sigma) and centroid (mu)."""
+def get_mean_and_covariance(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False):
     order = 2
     bunch_twiss_analysis = BunchTwissAnalysis()
     bunch_twiss_analysis.computeBunchMoments(
@@ -312,6 +341,11 @@ def get_mean_and_cov(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag
             cov[i, j] = cov[j, i] = value
 
     return mean, cov
+
+
+def get_covariance(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False):
+    mean, cov = get_mean_and_covariance(bunch, dispersion_flag, emit_norm_flag)
+    return cov
 
 
 def load(
