@@ -11,8 +11,8 @@ from orbit.core.bunch import BunchTwissAnalysis
 from orbit.lattice import AccLattice
 from orbit.core.orbit_utils import BunchExtremaCalculator
 
-import orbit_tools.bunch
-import orbit_tools.stats
+import orbitsim.bunch
+import orbitsim.stats
 
 
 def unit_symplectic_matrix(ndim: int = 4) -> np.ndarray:
@@ -91,7 +91,7 @@ def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLa
     V = normalization_matrix_from_eigenvectors(eigenvectors)
 
     # Compute bunch normalization matrix W.
-    Sigma = orbit_tools.bunch.get_covariance(bunch)    
+    Sigma = orbitsim.bunch.get_covariance(bunch)    
     Sigma = Sigma[:4, :4]
     U = unit_symplectic_matrix(4)
     SU = np.matmul(Sigma, U)
@@ -101,7 +101,7 @@ def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLa
 
     # Transform the bunch.
     T = np.matmul(V, np.linalg.inv(W))
-    bunch = orbit_tools.bunch.linear_transform(bunch, T, axis=(0, 1, 2, 3))        
+    bunch = orbitsim.bunch.linear_transform(bunch, T, axis=(0, 1, 2, 3))        
     return bunch
 
 
@@ -183,8 +183,8 @@ class Monitor:
                 Sigma[j, i] = Sigma[i, j] = value
           
         # Measure rms emittances
-        (eps_x, eps_y) = orbit_tools.stats.apparent_emittances(Sigma[:4, :4])
-        (eps_1, eps_2) = orbit_tools.stats.intrinsic_emittances(Sigma[:4, :4])   
+        (eps_x, eps_y) = orbitsim.stats.apparent_emittances(Sigma[:4, :4])
+        (eps_1, eps_2) = orbitsim.stats.intrinsic_emittances(Sigma[:4, :4])   
         if _mpi_rank == 0:
             self.history["eps_x"] = eps_x
             self.history["eps_y"] = eps_y

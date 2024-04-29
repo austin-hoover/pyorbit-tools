@@ -83,7 +83,10 @@ def set_node_fringe(node: AccNode, setting: bool = False) -> AccNode:
         node.setUsageFringeFieldIN(setting)
     return node
 
+
 def set_fringe(lattice: AccLattice, setting: bool) -> AccLattice:
     for node in lattice.getNodes():
         set_node_fringe(node, setting)
     return lattice
+
+    
