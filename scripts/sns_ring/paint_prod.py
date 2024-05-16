@@ -1,7 +1,4 @@
-"""Production painting.
-
-Parameters are hard-coded. Eventually I will put default values in a config file.
-"""
+"""Production painting."""
 import os
 import pathlib
 import sys
@@ -46,25 +43,9 @@ def main(cfg : DictConfig) -> None:
     
     # Initialize bunch
     # --------------------------------------------------------------------------------------
-    mass = cfg.bunch.mass
-    kin_energy = cfg.bunch.energy
-    
-    minipulse_intensity = cfg.inj.intensity
-    macros_per_turn = cfg.macros_per_turn
-    macros_total = cfg.turns_inj * macros_per_turn
-    macrosize = minipulse_intensity / float(macros_per_turn)
-    
-    bunch = Bunch()
-    bunch.mass(mass)
+    bunch, lostbunch, params_dict = setup.setup_bunch(cfg, setup.make_empty_bunch)
+    macrosize = cfg.inj.intensity / float(cfg.macros_per_turn)
     bunch.macroSize(macrosize)
-    bunch.getSyncParticle().kinEnergy(kin_energy)
-    
-    lostbunch = Bunch()
-    lostbunch.addPartAttr("LostParticleAttributes")
-    
-    params_dict = {}
-    params_dict["bunch"] = bunch
-    params_dict["lostbunch"] = lostbunch
     
     
     # Initialize lattice
@@ -81,10 +62,7 @@ def main(cfg : DictConfig) -> None:
     
     
     # Set injection kicker waveforms
-    # --------------------------------------------------------------------------------------
-
-    # [To do: set up from config?]
-    
+    # --------------------------------------------------------------------------------------    
     tih = -0.001  # [s]
     tiv = -0.002  # [s]
     tf = 0.001  # [s]
@@ -124,18 +102,18 @@ def main(cfg : DictConfig) -> None:
     ring.inj_kicker_nodes[7].setWaveform(hkickerwave)
     
     
-    # Add lattice nodes
+    # Set up lattice
     # --------------------------------------------------------------------------------------
-    inj_dist_x = setup.make_joho_dist(**cfg.inj.x)
-    inj_dist_y = setup.make_joho_dist(**cfg.inj.y)
-    inj_dist_z = setup.make_sns_espread_dist(ring, bunch, **cfg.inj.z)
+    inj_dist_x = setup.make_dist_tran_joho(**cfg.inj.x)
+    inj_dist_y = setup.make_dist_tran_joho(**cfg.inj.y)
+    inj_dist_z = setup.make_dist_long_sns_espread(ring, bunch, **cfg.inj.z)
 
     ring.add_injection_node(
-        n_parts=macros_per_turn,
+        n_parts=cfg.macros_per_turn,
         dist_x=inj_dist_x,
         dist_y=inj_dist_y,
         dist_z=inj_dist_z,
-        n_parts_max=macros_total,
+        n_parts_max=(cfg.turns_inj * cfg.macros_per_turn),
         parent_index=0,
     )
     

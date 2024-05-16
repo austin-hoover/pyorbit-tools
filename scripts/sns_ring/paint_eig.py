@@ -1,7 +1,4 @@
-"""Production painting.
-
-Parameters are hard-coded. Eventually I will put default values in a config file.
-"""
+"""Eigenpainting."""
 import os
 import pathlib
 import sys
@@ -144,7 +141,7 @@ def main(cfg : DictConfig) -> None:
     ric.set_kicker_angles(kicker_angles_ti)
 
 
-    # Add lattice nodes
+    # Set up lattice
     # --------------------------------------------------------------------------------------
     inj_dist_x = setup.make_joho_dist(**cfg.inj.x)
     inj_dist_y = setup.make_joho_dist(**cfg.inj.y)
@@ -159,27 +156,7 @@ def main(cfg : DictConfig) -> None:
         parent_index=0,
     )
     
-    if cfg.lattice.foil:
-        ring.add_foil_node(**cfg.foil)
-
-    if cfg.lattice.apertures:
-        ring.add_injection_chicane_apertures_and_displacements()
-        ring.add_apertures()
-
-    if cfg.lattice.rf:
-        ring.add_rf_cavities(**cfg.rf)
-
-    if cfg.lattice.impedance.z:
-        ring.add_longitudinal_impedance_node(**cfg.impedance.z)
-
-    if cfg.lattice.impedance.xy:
-        ring.add_transverse_impedance_node(**cfg.impedance.xy)
-
-    if cfg.lattice.spacecharge.z:
-        ring.add_longitudinal_spacecharge_node(**cfg.spacecharge.z)
-
-    if cfg.lattice.spacecharge.xy:
-        ring.add_transverse_spacecharge_nodes(**cfg.spacecharge.xy)
+    ring = setup.setup_ring(cfg, ring)
 
 
     # Diagnostics
