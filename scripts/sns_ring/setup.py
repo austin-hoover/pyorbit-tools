@@ -9,6 +9,7 @@ from orbit.injection import SNSESpreadDist
 from orbit.injection import UniformLongDist
 from orbit.utils.consts import speed_of_light
 
+from orbitsim.lattice import read_mad_file
 from orbitsim.models.sns.ring import SNS_RING
 
 
@@ -113,28 +114,38 @@ def make_params_dict(bunch, lostbunch):
     return params_dict
 
 
-def make_empty_bunch(cfg: DictConfig) -> Bunch:
+def make_bunch(cfg: DictConfig) -> tuple[Bunch, Bunch, dict]:
     bunch = Bunch()
     bunch.mass(cfg.bunch.mass)
     bunch.getSyncParticle().kinEnergy(cfg.bunch.energy)
-    return bunch
-
-
-def make_bunch_from_dist(cfg: DictConfig) -> Bunch:
-    """Make bunch from particle generator."""
-    bunch = make_empty_bunch(cfg)
-    # name = cfg.bunch.dist.name
-    # [...]
-    return bunch
-
-
-def setup_bunch(cfg: DictConfig, make_bunch: Callable) -> tuple[Bunch, Bunch, dict]:
-    """Set up bunch from config and `make_bunch` function."""
-    bunch = make_bunch(cfg)
     lostbunch = make_lostbunch()
     params_dict = make_params_dict(bunch, lostbunch)
     return (bunch, lostbunch, params_dict)
-    
+
+
+def make_ring(cfg: DictConfig) -> tuple[SNS_RING]:    
+    ring = SNS_RING(
+        inj_x=cfg.inj.x.pos,
+        inj_y=cfg.inj.y.pos,
+        inj_xp=cfg.inj.x.mom,
+        inj_yp=cfg.inj.y.mom,
+    )
+    ring = read_mad_file(ring, cfg.lattice.path, cfg.lattice.seq, kind="auto")
+    ring.initialize()
+
+    if not cfg.lattice.solenoid:
+        for node in ring.solenoid_nodes:
+            node.setParam("B", 0.0)
+
+    if not cfg.lattice.fringe:
+        for node in ring.getNodes():
+            try:
+                node.setUsageFringeFieldIN(False)
+                node.setUsageFringeFieldOUT(False)
+            except:
+                pass
+    return ring
+
 
 def setup_ring(cfg: DictConfig, ring: SNS_RING) -> SNS_RING:
     """Set up ring (add nodes) from config.

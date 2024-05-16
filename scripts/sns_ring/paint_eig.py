@@ -46,26 +46,9 @@ def main(cfg : DictConfig) -> None:
     
     # Initialize bunch
     # --------------------------------------------------------------------------------------
-    mass = cfg.bunch.mass
-    kin_energy = cfg.bunch.energy
-    
-    minipulse_intensity = cfg.inj.intensity
-    macros_per_turn = cfg.macros_per_turn
-    macros_total = cfg.turns_inj * macros_per_turn
-    macrosize = minipulse_intensity / float(macros_per_turn)
-    
-    bunch = Bunch()
-    bunch.mass(mass)
+    bunch, lostbunch, params_dict = setup.setup_bunch(cfg, setup.make_empty_bunch)
+    macrosize = cfg.inj.intensity / float(cfg.macros_per_turn)
     bunch.macroSize(macrosize)
-    bunch.getSyncParticle().kinEnergy(kin_energy)
-    sync_part = bunch.getSyncParticle()
-    
-    lostbunch = Bunch()
-    lostbunch.addPartAttr("LostParticleAttributes")
-    
-    params_dict = {}
-    params_dict["bunch"] = bunch
-    params_dict["lostbunch"] = lostbunch
     
     
     # Initialize lattice

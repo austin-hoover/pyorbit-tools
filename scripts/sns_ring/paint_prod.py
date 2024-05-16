@@ -17,7 +17,6 @@ from orbit.kickernodes import SquareRootWaveform
 from orbit.lattice import AccNode
 from orbit.utils.consts import mass_proton
 
-from orbitsim.lattice import read_mad_file
 from orbitsim.models.sns.ring import SNS_RING
 from orbitsim.ring import Monitor
 
@@ -43,21 +42,14 @@ def main(cfg : DictConfig) -> None:
     
     # Initialize bunch
     # --------------------------------------------------------------------------------------
-    bunch, lostbunch, params_dict = setup.setup_bunch(cfg, setup.make_empty_bunch)
+    bunch, lostbunch, params_dict = setup.make_bunch(cfg)
     macrosize = cfg.inj.intensity / float(cfg.macros_per_turn)
     bunch.macroSize(macrosize)
     
     
     # Initialize lattice
     # --------------------------------------------------------------------------------------    
-    ring = SNS_RING(
-        inj_x=cfg.inj.x.pos,
-        inj_y=cfg.inj.y.pos,
-        inj_xp=cfg.inj.x.mom,
-        inj_yp=cfg.inj.y.mom,
-    )
-    ring = read_mad_file(ring, cfg.lattice.path, cfg.lattice.seq, kind="auto")
-    ring.initialize()
+    ring = setup.make_ring(cfg)
     ring.set_bunch(bunch, lostbunch, params_dict)
     
     
