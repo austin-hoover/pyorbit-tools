@@ -9,6 +9,9 @@ from orbit.injection import UniformLongDist
 from orbit.utils.consts import speed_of_light
 
 
+from orbitsim.models.sns.ring import SNS_RING
+
+
 def make_joho_dist(
     order: int,
     alpha: float,
@@ -103,3 +106,37 @@ def make_minipulse_generators_production(cfg: DictConfig, lattice: AccLattice, b
     dist_z = make_sns_espread_dist(lattice, bunch, **cfg.inj.z)
     return (dist_x, dist_y, dist_z)
 
+
+def setup_ring(cfg: DictConfig, ring: SNS_RING) -> SNS_RING:
+    """Adds lattice nodes depending on switches in config.
+
+    - foil scattering node
+    - aperture nodes
+    - displacement nodes
+    - rf nodes
+    - impedance (xy, z)
+    - space charge (xy, z)
+    """
+    if cfg.lattice.foil:
+        ring.add_foil_node(**cfg.foil)
+
+    if cfg.lattice.apertures:
+        ring.add_injection_chicane_apertures_and_displacements()
+        ring.add_apertures()
+
+    if cfg.lattice.rf:
+        ring.add_rf_cavities(**cfg.rf)
+
+    if cfg.lattice.impedance.z:
+        ring.add_longitudinal_impedance_node(**cfg.impedance.z)
+
+    if cfg.lattice.impedance.xy:
+        ring.add_transverse_impedance_node(**cfg.impedance.xy)
+
+    if cfg.lattice.spacecharge.z:
+        ring.add_longitudinal_spacecharge_node(**cfg.spacecharge.z)
+
+    if cfg.lattice.spacecharge.xy:
+        ring.add_transverse_spacecharge_nodes(**cfg.spacecharge.xy)
+
+    return ring

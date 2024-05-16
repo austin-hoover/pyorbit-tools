@@ -88,7 +88,6 @@ def main(cfg : DictConfig) -> None:
             node.setParam("B", 0.0)
 
     if not cfg.lattice.fringe:
-        # set_fringe(ring, False)
         for node in ring.getNodes():
             try:
                 node.setUsageFringeFieldIN(False)
@@ -97,9 +96,8 @@ def main(cfg : DictConfig) -> None:
                 pass
             
     
-    # Set injection kicker waveforms
+    # Injection kicker waveforms
     # --------------------------------------------------------------------------------------
-
     ric = RingInjectionController(
         ring,
         mass=mass,
@@ -146,7 +144,7 @@ def main(cfg : DictConfig) -> None:
     ric.set_kicker_angles(kicker_angles_ti)
 
 
-    # Add nodes
+    # Add lattice nodes
     # --------------------------------------------------------------------------------------
     inj_dist_x = setup.make_joho_dist(**cfg.inj.x)
     inj_dist_y = setup.make_joho_dist(**cfg.inj.y)
@@ -184,29 +182,31 @@ def main(cfg : DictConfig) -> None:
         ring.add_transverse_spacecharge_nodes(**cfg.spacecharge.xy)
 
 
-    # Add diagnostics
+    # Diagnostics
     # --------------------------------------------------------------------------------------
-
-    # Monitor node
-    # [...]
-
-    # Plotting node
-    # [...]
+    monitor_nodes = []
+    monitor_node = Monitor(output_dir=output_dir, verbose=True)
+    monitor_nodes.append(monitor_node)
 
     
-    # Track
+    # Tracking
     # --------------------------------------------------------------------------------------
-    if cfg.track:
-        for turn in tqdm(range(cfg.turns_inj + cfg.turns_store)):
-            ring.trackBunch(bunch, params_dict)
-        
-            if turn % cfg.write_bunch_freq == 0:
-                filename = f"bunch_{turn:05.0f}.dat"
-                filename = os.path.join(output_dir, filename)
-                bunch.dumpBunch(filename)
+    turns = range(cfg.turns_inj + cfg.turns_store)
+    if cfg.progbar:
+        turns = tqdm(turns)
+    
+    for turn in turns:
+        ring.trackBunch(bunch, params_dict)
+    
+        if turn % cfg.write_bunch_freq == 0:
+            filename = f"bunch_{turn:05.0f}.dat"
+            filename = os.path.join(output_dir, filename)
+            bunch.dumpBunch(filename)
 
-    print(output_dir)
+        for monitor_node in monitor_nodes:
+            monitor_node(params_dict)
 
 
 if __name__ == "__main__":
     main()
+
