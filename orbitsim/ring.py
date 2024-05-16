@@ -5,6 +5,7 @@ import time
 import numpy as np
 import pandas as pd
 
+import orbit.lattice
 from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
@@ -13,6 +14,44 @@ from orbit.core.orbit_utils import BunchExtremaCalculator
 
 import orbitsim.bunch
 import orbitsim.stats
+
+
+def track_twiss(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str, np.ndarray]:
+    bunch = Bunch()
+    bunch.mass(mass)
+    bunch.getSyncParticle().kinEnergy(kin_energy)
+    
+    matrix_lattice = orbit.lattice.TEAPOT_MATRIX_Lattice(lattice, bunch)
+    (pos_nu_x, pos_alpha_x, pos_beta_x) = matrix_lattice.getRingTwissDataX()
+    (pos_nu_y, pos_alpha_y, pos_beta_y) = matrix_lattice.getRingTwissDataY()
+    
+    data = dict()
+    data["pos"] = np.array(pos_nu_x)[:, 0]
+    data["nu_x"] = np.array(pos_nu_x)[:, 1]
+    data["nu_y"] = np.array(pos_nu_y)[:, 1]
+    data["alpha_x"] = np.array(pos_alpha_x)[:, 1]
+    data["alpha_y"] = np.array(pos_alpha_y)[:, 1]
+    data["beta_x"] = np.array(pos_beta_x)[:, 1]
+    data["beta_y"] = np.array(pos_beta_y)[:, 1]
+    return data
+
+
+def track_dispersion(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str, np.ndarray]:
+    bunch = Bunch()
+    bunch.mass(mass)
+    bunch.getSyncParticle().kinEnergy(kin_energy)
+    
+    matrix_lattice = TEAPOT_MATRIX_Lattice(lattice, bunch)
+    (pos_disp_x, pos_dispp_x) = matrix_lattice.getRingDispersionDataX()
+    (pos_disp_y, pos_dispp_y) = matrix_lattice.getRingDispersionDataY()
+    
+    data = dict()
+    data["s"] = np.array(pos_disp_x)[:, 0]
+    data["disp_x"] = np.array(pos_disp_x)[:, 1]
+    data["disp_y"] = np.array(pos_disp_y)[:, 1]
+    data["dispp_x"] = np.array(pos_dispp_x)[:, 1]
+    data["dispp_y"] = np.array(pos_dispp_y)[:, 1]
+    return data
 
 
 def unit_symplectic_matrix(ndim: int = 4) -> np.ndarray:
@@ -106,14 +145,14 @@ def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLa
 
 
 class Monitor:
-    def __init__(self, path: str = None, verbose: bool = True) -> None:
-        self.path = path
+    def __init__(self, output_dir: str = None, verbose: bool = True) -> None:
+        _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
+        _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
+
+        self.output_dir = output_dir
         self.verbose = verbose
         self.start_time = None
         self.iteration = 0
-
-        _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
-        _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
 
         if _mpi_rank == 0:
             keys = ["size", "gamma", "beta", "energy"]
@@ -135,12 +174,11 @@ class Monitor:
                 self.history[key] = None
 
             self.file = None
-            if path is not None:
-                self.file = open(path, "w")
+            if output_dir is not None:
+                self.file = open(os.path.join(output_dir, "history.dat"), "w")
                 line = ",".join(list(self.history))
                 line = line[:-1] + "\n"
                 self.file.write(line)
-            self.path = path
     
     def __call__(self, params_dict: dict) -> None:
         _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
@@ -236,4 +274,3 @@ class Monitor:
             self.file.write(line)
 
         self.iteration += 1    
-

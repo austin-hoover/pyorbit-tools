@@ -1,3 +1,6 @@
+import os
+import sys
+import time
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -89,4 +92,39 @@ def set_fringe(lattice: AccLattice, setting: bool) -> AccLattice:
         set_node_fringe(node, setting)
     return lattice
 
-    
+
+def read_mad_file(lattice: AccLattice, path: str, sequence: str, kind: str = "auto") -> AccLattice:
+    if not os.path.exists(path):
+        raise FileNotFoundError 
+
+    if kind == "auto":
+        # MADX output is lowercase; MAD is upercase.
+        kind = "madx"
+        file = open(path, "r")
+        for line in file:
+            if line.isupper():
+                kind = "mad"
+                break
+        file.close()
+            
+    if kind == "madx":
+        lattice.readMADX(path, sequence)
+    elif kind == "mad":
+        lattice.readMAD(path, sequence)
+    else:
+        raise ValueError(f"Invalid kind {kind}")
+
+    return lattice
+
+
+def get_node_for_name_any_case(lattice: AccLattice, name: str) -> AccNode:
+    nodes = lattice.getNodes()
+    node_names = [node.getName() for node in nodes]
+    if name not in node_names:
+        if name.lower() in node_names:
+            name = name.lower()
+        elif name.upper() in node_names:
+            name = name.upper()
+        else:            
+            raise ValueError(f"node {name} not found")
+    return lattice.getNodeForName(name)

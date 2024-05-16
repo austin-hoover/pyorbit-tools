@@ -1,5 +1,8 @@
+gitpython
 matplotlib
 numpy
+omegaconf
 pandas
+pyyaml
 scipy
 tqdm

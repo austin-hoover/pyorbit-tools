@@ -1,0 +1,35 @@
+# EKicker impedance from private communication with J.G. Wang. Seems to be for 7 of the 14
+# kickers (not sure why). Impedance in Ohms/n. Kicker and RF impedances are inductive with
+# real part positive and imaginary is negative by Chao definition.
+0.0 0.0
+0.750 0.0
+0.333 0.0
+0.250 0.0
+0.200 0.0
+0.167 0.0
+3.214 0.0
+0.188 0.0
+0.167 0.0
+0.150 0.0
+1.000 0.0
+0.125 0.0
+0.115 0.0
+0.143 0.0
+0.333 0.0
+0.313 0.0
+0.294 0.0
+0.278 0.0
+0.263 0.0
+0.250 0.0
+0.714 0.0
+0.682 0.0
+0.652 0.0
+0.625 0.0
+0.600 0.0
+0.577 0.0
+0.536 0.0
+0.536 0.0
+0.517 0.0
+0.500 0.0
+0.484 0.0
+0.469 0.0

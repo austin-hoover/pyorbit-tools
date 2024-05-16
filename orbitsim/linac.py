@@ -213,7 +213,7 @@ class BunchMonitor:
                 line = line[:-1] + "\n"
                 self.history_file.write(line)
             
-    def action(self, params_dict, force_update=False):
+    def __call__(self, params_dict, force_update=False):
         _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
         _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
         
