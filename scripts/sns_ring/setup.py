@@ -1,3 +1,4 @@
+from typing import Any
 from typing import Callable
 from omegaconf import DictConfig
 
@@ -13,7 +14,9 @@ from orbitsim.lattice import read_mad_file
 from orbitsim.models.sns.ring import SNS_RING
 
 
-def make_dist_tran_joho(
+def make_joho_distribution(
+    lattice: AccLattice,
+    bunch: Bunch,
     order: int,
     alpha: float,
     beta: float,
@@ -26,7 +29,7 @@ def make_dist_tran_joho(
     return JohoTransverse(order, alpha, beta, eps_lim, pos, mom)
 
 
-def make_dist_long_uniform(
+def make_uniform_longitudinal_distribution(
     lattice: AccLattice,
     bunch: Bunch,
     fill_fraction: float,
@@ -40,7 +43,7 @@ def make_dist_long_uniform(
     return UniformLongDist(zmin, zmax, sync_part, energy_offset, frac_energy_spread)
 
 
-def make_dist_long_sns_espread(
+def make_sns_espread_distribution(
     lattice: AccLattice,
     bunch: Bunch, 
     fill_fraction: float,
@@ -101,6 +104,42 @@ def make_dist_long_sns_espread(
     return dist
 
 
+def make_distribution(funcs: dict, name: str, lattice: AccLattice, bunch: Bunch, **kws) -> Any:
+    return funcs[name](lattice, bunch, **kws)
+
+
+def make_distribution_6d(name: str, lattice: AccLattice, bunch: Bunch, **kws) -> Any:
+    funcs = {
+        "guassian": None,
+        "waterbag": None,
+        "kv": None,
+    }
+    return make_distribution(funcs, name, lattice, bunch, **kws)
+    
+
+def make_transverse_distribution_4d(name: str, lattice: AccLattice, bunch: Bunch, **kws) -> Any:
+    funcs = {}
+    return make_distribution(funcs, name, lattice, bunch, **kws)
+
+
+def make_transverse_distribution_2d(name: str, lattice: AccLattice, bunch: Bunch, **kws) -> Any:
+    funcs = {
+        "joho": make_joho_distribution,
+        "guassian": None,
+        "waterbag": None,
+        "kv": None,
+    }
+    return make_distribution(funcs, name, lattice, bunch, **kws)
+
+
+def make_longitudinal_distribution(name: str, lattice: AccLattice, bunch: Bunch, **kws) -> Any:
+    funcs = {
+        "uniform": make_uniform_longitudinal_distribution,
+        "sns_espread": make_sns_espread_distribution,
+    }
+    return make_distribution(funcs, name, lattice, bunch, **kws)
+
+
 def make_lostbunch() -> Bunch:
     lostbunch = Bunch()
     lostbunch.addPartAttr("LostParticleAttributes")
@@ -118,8 +157,10 @@ def make_bunch(cfg: DictConfig) -> tuple[Bunch, Bunch, dict]:
     bunch = Bunch()
     bunch.mass(cfg.bunch.mass)
     bunch.getSyncParticle().kinEnergy(cfg.bunch.energy)
+    
     lostbunch = make_lostbunch()
     params_dict = make_params_dict(bunch, lostbunch)
+    
     return (bunch, lostbunch, params_dict)
 
 

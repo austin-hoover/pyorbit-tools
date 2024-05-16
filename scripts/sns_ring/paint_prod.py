@@ -96,9 +96,25 @@ def main(cfg : DictConfig) -> None:
     
     # Set up lattice
     # --------------------------------------------------------------------------------------
-    inj_dist_x = setup.make_dist_tran_joho(**cfg.inj.x)
-    inj_dist_y = setup.make_dist_tran_joho(**cfg.inj.y)
-    inj_dist_z = setup.make_dist_long_sns_espread(ring, bunch, **cfg.inj.z)
+
+    inj_dist_x = setup.make_transverse_distribution_2d(
+        name="joho",
+        lattice=ring,
+        bunch=bunch,
+        **cfg.inj.x
+    )
+    inj_dist_y = setup.make_transverse_distribution_2d(
+        name="joho",
+        lattice=ring,
+        bunch=bunch,
+        **cfg.inj.y
+    )
+    inj_dist_z = setup.make_longitudinal_distribution(
+        name="sns_espread",
+        lattice=ring,
+        bunch=bunch,
+        **cfg.inj.z
+    )
 
     ring.add_injection_node(
         n_parts=cfg.macros_per_turn,
