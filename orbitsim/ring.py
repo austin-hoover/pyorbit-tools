@@ -168,6 +168,7 @@ class Monitor:
             for i in range(6):
                 for j in range(i + 1):
                     keys.append("cov_{}-{}".format(j, i))
+            keys.append("runtime")
                     
             self.history = dict()
             for key in keys:
@@ -263,6 +264,8 @@ class Monitor:
                 1.00e+06 * eps_2,
             )
             print(message)
+
+        self.history["runtime"] = runtime
 
         # Add one line to the history file.
         if _mpi_rank == 0 and self.file is not None:
