@@ -94,7 +94,7 @@ def main(cfg : DictConfig) -> None:
     v2 = eigenvectors[:, 1]
     psi1 = 0.0
     psi2 = 0.0
-    J1 = 25.00e-06
+    J1 = 12.00e-06
     J2 = 0.00e-06
     
     vector = np.zeros(4)

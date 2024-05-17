@@ -89,8 +89,8 @@ def main(cfg : DictConfig) -> None:
     inj_coords_tf[3] = ring.inj_yp - cfg.paint.ypf
 
     # Run optimizer.
-    kicker_angles_ti = ric.set_inj_coords(*inj_coords_ti)
-    kicker_angles_tf = ric.set_inj_coords(*inj_coords_tf)
+    kicker_angles_ti = ric.set_inj_coords(*inj_coords_ti, method="least_squares")
+    kicker_angles_tf = ric.set_inj_coords(*inj_coords_tf, method="least_squares")
 
     # Create waveforms.
     time_per_turn = ring.getLength() / (sync_part.beta() * speed_of_light)

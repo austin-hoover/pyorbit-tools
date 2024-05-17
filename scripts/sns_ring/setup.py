@@ -164,7 +164,7 @@ def make_bunch(cfg: DictConfig) -> tuple[Bunch, Bunch, dict]:
     return (bunch, lostbunch, params_dict)
 
 
-def make_ring(cfg: DictConfig) -> tuple[SNS_RING]:    
+def make_ring(cfg: DictConfig) -> tuple[SNS_RING]:  
     ring = SNS_RING(
         inj_x=cfg.inj.x.pos,
         inj_y=cfg.inj.y.pos,
