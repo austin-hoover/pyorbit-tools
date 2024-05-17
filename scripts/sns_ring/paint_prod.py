@@ -18,6 +18,7 @@ from orbit.lattice import AccNode
 from orbit.utils.consts import mass_proton
 
 from orbitsim.models.sns.ring import SNS_RING
+from orbitsim.models.sns.ring import RingInjectionController
 from orbitsim.ring import Monitor
 
 import setup

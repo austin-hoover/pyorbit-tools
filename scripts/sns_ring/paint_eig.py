@@ -23,9 +23,9 @@ from orbitsim.lattice import read_mad_file
 from orbitsim.ring import get_transfer_matrix
 from orbitsim.ring import Monitor
 from orbitsim.models.sns.ring import SNS_RING
+from orbitsim.models.sns.ring import RingInjectionController
 
 import setup
-from injection import RingInjectionController
 
 
 @hydra.main(version_base=None, config_path="./config", config_name="paint_eig.yaml")

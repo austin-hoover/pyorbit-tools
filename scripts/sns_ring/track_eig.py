@@ -19,6 +19,7 @@ from orbit.lattice import AccNode
 from orbitsim import coupling
 from orbitsim.ring import get_transfer_matrix
 from orbitsim.models.sns.ring import SNS_RING
+from orbitsim.models.sns.ring import RingInjectionController
 
 import setup
 
