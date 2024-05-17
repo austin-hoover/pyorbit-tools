@@ -13,8 +13,18 @@ from orbit.lattice import AccLattice
 from orbit.core.orbit_utils import BunchExtremaCalculator
 
 import orbitsim.bunch
+import orbitsim.lattice
 import orbitsim.stats
+import orbitsim.utils
 
+
+def get_transfer_matrix(lattice: AccLattice, mass: float, kin_energy: float, ndim: int = 6) -> np.ndarray:
+    matrix_lattice = orbitsim.lattice.get_matrix_lattice(lattice, mass, kin_energy)
+    M = matrix_lattice.oneTurnMatrix
+    M = orbitsim.utils.orbit_matrix_to_numpy(M)
+    M = M[:ndim, :ndim]
+    return M
+    
 
 def track_twiss(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str, np.ndarray]:
     bunch = Bunch()
@@ -249,10 +259,13 @@ class Monitor:
             self.history["y_max"] = y_max
             self.history["z_min"] = z_min
             self.history["z_max"] = z_max
+
+        if _mpi_rank == 0:
+            runtime = time.time() - self.start_time
+            self.history["runtime"] = runtime
                       
         # Print update message.
         if self.verbose and _mpi_rank == 0:
-            runtime = time.time() - self.start_time
             message = f"turn={self.iteration:05.0f} t={runtime:0.3f} size={size:05.0f}"
             message = "{} xrms={:0.2e} yrms={:0.2e} epsx={:0.2e} epsy={:0.2e} eps1={:0.2e} eps2={:0.2e} ".format(
                 message,
@@ -264,8 +277,6 @@ class Monitor:
                 1.00e+06 * eps_2,
             )
             print(message)
-
-        self.history["runtime"] = runtime
 
         # Add one line to the history file.
         if _mpi_rank == 0 and self.file is not None:

@@ -3,18 +3,10 @@ from typing import Tuple
 import numpy as np
 
 from orbit.utils.consts import speed_of_light
-from orbit.core.orbit_utils import Matrix
 
 
 CLASSICAL_PROTON_RADIUS = 1.53469e-18  # [m]
 
-
-def orbit_matrix_to_numpy(matrix: Matrix) -> np.ndarray:
-    array = np.zeros(matrix.size())
-    for i in range(array.shape[0]):
-        for j in range(array.shape[1]):
-            array[i, j] = matrix.get(i, j)
-    return array
 
 
 def get_lorentz_factors(mass: float, kin_energy: float) -> Tuple[float]:

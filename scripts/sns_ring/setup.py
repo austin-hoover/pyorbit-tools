@@ -179,12 +179,8 @@ def make_ring(cfg: DictConfig) -> tuple[SNS_RING]:
             node.setParam("B", 0.0)
 
     if not cfg.lattice.fringe:
-        for node in ring.getNodes():
-            try:
-                node.setUsageFringeFieldIN(False)
-                node.setUsageFringeFieldOUT(False)
-            except:
-                pass
+        ring.set_fringe(False)
+        
     return ring
 
 

@@ -12,6 +12,7 @@ from orbit.core.bunch import Bunch
 from orbit.lattice import AccNode
 from orbit.lattice import AccLattice
 from orbit.matrix_lattice import MATRIX_Lattice
+from orbit.teapot import TEAPOT_MATRIX_Lattice
 
 
 def get_matrix_lattice(lattice: AccLattice, mass: float, kin_energy: float) -> MATRIX_Lattice:

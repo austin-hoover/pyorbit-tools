@@ -72,6 +72,8 @@ from orbit.utils import consts
 from orbit.utils.consts import mass_proton
 from orbit.utils.consts import speed_of_light
 
+from orbitsim.lattice import set_fringe
+
 
 ## Foil boundary relative to injection point [m]
 FOIL_XMIN_REL = -0.005
@@ -177,7 +179,8 @@ class SNS_RING(TEAPOT_Ring):
             if node.getName().lower() in self.solenoid_names:
                 self.solenoid_nodes.append(node)
                 # Set strength manually.
-                node.setParam("B", 0.6 / (2.0 * node.getLength()))
+                factor = 0.25
+                node.setParam("B", factor * 0.6 / (2.0 * node.getLength()))
 
     def set_bunch(self, bunch: Bunch, lostbunch: Bunch = None, params_dict: dict = None) -> None:
         self.bunch = bunch
@@ -191,6 +194,14 @@ class SNS_RING(TEAPOT_Ring):
             self.params_dict = {}
             self.params_dict["bunch"] = bunch
             self.params_dict["lostbunch"] = lostbunch
+
+    def set_fringe(self, setting: bool) -> None:
+        for node in self.getNodes():
+            try:
+                node.setUsageFringeFieldIN(setting)
+                node.setUsageFringeFieldOUT(setting)
+            except:
+                pass
 
     def add_injection_node(
         self,

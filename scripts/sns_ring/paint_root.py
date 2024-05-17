@@ -28,7 +28,7 @@ import setup
 from injection import RingInjectionController
 
 
-@hydra.main(version_base=None, config_path="./config", config_name="paint_eig.yaml")
+@hydra.main(version_base=None, config_path="./config", config_name="paint_root.yaml")
 def main(cfg : DictConfig) -> None:
 
     # Setup
@@ -63,22 +63,6 @@ def main(cfg : DictConfig) -> None:
     ring.set_bunch(bunch, lostbunch, params_dict)
     
     
-    # Linear transfer matrix analysis
-    # --------------------------------------------------------------------------------------
-    ring.set_fringe(False)
-    
-    M = get_transfer_matrix(ring, mass, kin_energy, ndim=4)
-    eigenvalues, eigenvectors = np.linalg.eig(M)
-    eigentunes = coupling.eigentunes_from_eigenvalues(eigenvalues)
-    eigenvectors = coupling.normalize_eigenvectors(eigenvectors)
-    eigenvectors = eigenvectors[:, ::2]
-    
-    print(f"tune_1 = {eigentunes[0]}")
-    print(f"tune_2 = {eigentunes[1]}")
-    
-    ring.set_fringe(cfg.lattice.fringe)
-    
-    
     # Injection kicker waveforms
     # --------------------------------------------------------------------------------------
     ric = RingInjectionController(
@@ -90,36 +74,23 @@ def main(cfg : DictConfig) -> None:
         inj_stop="bpm_b01",
     )
 
-    v1 = eigenvectors[:, 0]
-    v2 = eigenvectors[:, 1]
-    psi1 = 0.0
-    psi2 = 0.0
-    J1 = 25.00e-06
-    J2 = 0.00e-06
-    
-    vector = np.zeros(4)
-    vector += np.real(np.sqrt(2.0 * J1) * v1 * np.exp(-1.0j * psi1))
-    vector += np.real(np.sqrt(2.0 * J2) * v2 * np.exp(-1.0j * psi2))
-
     # Initial coordinates of closed orbit at injection point [x, x', y, y']
     inj_coords_ti = np.zeros(4)
-    inj_coords_ti[0] = ring.inj_x
-    inj_coords_ti[1] = ring.inj_xp
-    inj_coords_ti[2] = ring.inj_y
-    inj_coords_ti[3] = ring.inj_yp
+    inj_coords_ti[0] = ring.inj_x  - cfg.paint.xi
+    inj_coords_ti[1] = ring.inj_xp - cfg.paint.xpi
+    inj_coords_ti[2] = ring.inj_y  - cfg.paint.yi
+    inj_coords_ti[3] = ring.inj_yp - cfg.paint.ypi
     
     # Final coordinates of closed orbit at injection point  [x, x', y, y']
     inj_coords_tf = np.zeros(4)
-    inj_coords_tf[0] = ring.inj_x  - vector[0]
-    inj_coords_tf[1] = ring.inj_xp - vector[1]
-    inj_coords_tf[2] = ring.inj_y  - vector[2]
-    inj_coords_tf[3] = ring.inj_yp - vector[3]
+    inj_coords_tf[0] = ring.inj_x  - cfg.paint.xf
+    inj_coords_tf[1] = ring.inj_xp - cfg.paint.xpf
+    inj_coords_tf[2] = ring.inj_y  - cfg.paint.yf
+    inj_coords_tf[3] = ring.inj_yp - cfg.paint.ypf
 
     # Run optimizer.
     kicker_angles_ti = ric.set_inj_coords(*inj_coords_ti)
     kicker_angles_tf = ric.set_inj_coords(*inj_coords_tf)
-
-    print(inj_coords_tf * 1000.0)
 
     # Create waveforms.
     time_per_turn = ring.getLength() / (sync_part.beta() * speed_of_light)

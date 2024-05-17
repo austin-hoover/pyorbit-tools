@@ -122,4 +122,5 @@ track: true
 
 plot_freq: 100
 progbar: true
+verbose: true
     
