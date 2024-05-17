@@ -170,10 +170,10 @@ class RingInjectionController:
                 (x_beg, xp_beg, y_beg, yp_beg) = np.zeros(4)
                 (x_mid, xp_mid, y_mid, yp_mid) = coords_mid * 1000.0
                 (x_end, xp_end, y_end, yp_end) = coords_end * 1000.0
-                # print(f"x_beg={x_beg:+0.3f} xp_beg={xp_beg:+0.3f} y_beg={y_beg:+0.3f} yp_beg={yp_beg:+0.3f}")
-                # print(f"x_mid={x_mid:+0.3f} xp_mid={xp_mid:+0.3f} y_mid={y_mid:+0.3f} yp_mid={yp_mid:+0.3f}")
-                # print(f"x_end={x_end:+0.3f} xp_end={xp_end:+0.3f} y_end={y_end:+0.3f} yp_end={yp_end:+0.3f}")
-                # print()
+                print(f"x_beg={x_beg:+0.3f} xp_beg={xp_beg:+0.3f} y_beg={y_beg:+0.3f} yp_beg={yp_beg:+0.3f}")
+                print(f"x_mid={x_mid:+0.3f} xp_mid={xp_mid:+0.3f} y_mid={y_mid:+0.3f} yp_mid={yp_mid:+0.3f}")
+                print(f"x_end={x_end:+0.3f} xp_end={xp_end:+0.3f} y_end={y_end:+0.3f} yp_end={yp_end:+0.3f}")
+                print()
             
             cost = magnitude(coords_mid - coords) + magnitude(coords_end)
             return cost
