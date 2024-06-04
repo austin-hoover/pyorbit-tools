@@ -1,0 +1,10 @@
+timestamp: ${now:%y%m%d%H%M%S}
+hydra:
+    run:
+        dir: ./outputs/${hydra.job.name}/${timestamp}
+    callbacks:
+        save_job_info:
+            _target_: hydra.experimental.callbacks.PickleJobInfoCallback
+        save_git_info:
+            _target_: orbitsim.hydra.GitSHACallback
+    output_subdir: config

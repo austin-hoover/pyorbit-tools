@@ -61,7 +61,15 @@ def main(cfg : DictConfig) -> None:
     # --------------------------------------------------------------------------------------    
     ring = setup.make_ring(cfg)
     ring.set_bunch(bunch, lostbunch, params_dict)
-    
+
+
+    # Compute ring transfer matrix.
+    ring.set_fringe(False)
+    transfer_matrix = get_transfer_matrix(ring, cfg.bunch.mass, cfg.bunch.energy, ndim=4)
+    ring.set_fringe(cfg.lattice.fringe)
+
+    np.savetxt(os.path.join(output_dir, "transfer_matrix.dat"), transfer_matrix)
+
     
     # Injection kicker waveforms
     # --------------------------------------------------------------------------------------
