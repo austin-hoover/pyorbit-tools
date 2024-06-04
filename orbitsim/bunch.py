@@ -39,11 +39,14 @@ def get_z_rms_deg(bunch: Bunch, frequency: float, z_rms: float) -> float:
 
 
 def set_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
-    """Set macroparticle size from beam current [A] and bunch frequency [Hz]."""
+    """Set bunch macroparticle size from current and bunch frequency.
+
+    Assumes bunch charge is already set.
+    """
     intensity = get_intensity(current=current, frequency=frequency, charge=bunch.charge())
-    size = bunch.getSizeGlobal()
-    if size > 0:
-        macro_size = intensity / size
+    bunch_size_global = bunch.getSizeGlobal()
+    if bunch_size_global > 0:
+        macro_size = intensity / bunch_size_global
         bunch.macroSize(macro_size)
     return bunch
 
@@ -435,13 +438,13 @@ def load(
     return bunch
 
 
-def generate(gen: Callable, size: int, bunch: Bunch = None, verbose: bool = True):
+def generate(sample: Callable, size: int, bunch: Bunch = None, verbose: bool = True):
     """Generate bunch from distribution generator.
 
     Parameters
     ----------
-    gen : callable
-        Returns (x, xp, y, yp, z, dE).
+    sample : callable
+        Samples (x, xp, y, yp, z, dE) from the distribution.
     size : int
         The number of particles to generate.
     bunch : Bunch
@@ -469,7 +472,7 @@ def generate(gen: Callable, size: int, bunch: Bunch = None, verbose: bool = True
         _range = tqdm(_range)
 
     for i in _range:
-        (x, xp, y, yp, z, dE) = gen()
+        (x, xp, y, yp, z, dE) = sample()
         (x, xp, y, yp, z, dE) = orbit_mpi.MPI_Bcast(
             (x, xp, y, yp, z, dE),
             _mpi_dtype,
@@ -478,10 +481,11 @@ def generate(gen: Callable, size: int, bunch: Bunch = None, verbose: bool = True
         )
         if i % _mpi_size == _mpi_rank:
             bunch.addParticle(x, xp, y, yp, z, dE)
+    return bunch
 
 
 def get_twiss_containers(bunch: Bunch) -> List[orbit.bunch_generators.TwissContainer]:
-    """Compute covariance matrix and return x/y/z TwissContainers.
+    """Compute covariance matrix and return x/y/z TwissContainers from bunch.
 
     We return [twiss_x, twiss_y, twiss_z], where each entry is a TwissContainer
     containing [alpha, beta, emittance].

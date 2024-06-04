@@ -8,3 +8,40 @@ hydra:
         save_git_info:
             _target_: orbitsim.hydra.GitSHACallback
     output_subdir: config
+
+
+bunch:
+    energy: 0.0025  # [GeV]
+    mass: 0.939294  # [GeV / c^2]
+    charge: -1.0  # [e]
+    current: 0.038  # [mA]
+    size: null
+    
+    path: null
+    
+    dist: waterbag
+    alpha_x: -1.9620
+    alpha_y: +1.7681
+    alpha_z: -0.0196
+    beta_x: 0.1831
+    beta_y: 0.1620
+    beta_z: 0.5844
+    eps_x: 0.21e-06
+    eps_y: 0.21e-06
+    eps_z: 0.24153e-06
+
+lattice:
+    xml: null
+    seq_start: MEBT
+    seq_stop: HEBT2
+    max_drift: 0.010  # [m]
+    rf_frequency: 402.5e+06  # [Hz]
+    spacecharge: false  # switch
+    rf: false  # switch
+
+start: 0.0
+stop: null
+
+stride: 0.010
+stride_write: null
+stride_plot: null
