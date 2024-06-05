@@ -205,18 +205,18 @@ class BunchMonitor:
             keys = [
                 "position",
                 "node",
-                "n_parts",
+                "size",
                 "gamma",
                 "beta",
                 "energy",
                 "x_rms",
                 "y_rms",
                 "z_rms",
-                "z_rms_deg",
-                "z_to_phase_coeff",
                 "xp_rms",
                 "yp_rms",
                 "de_rms",
+                "z_rms_deg",
+                "z_to_phase_coeff",
                 "x_min",
                 "x_max",
                 "y_min",
@@ -232,10 +232,12 @@ class BunchMonitor:
                 "eps_xz",
                 "eps_yz",
                 "eps_xyz",
-                "beta_x",
-                "beta_y",
+                "eps_x_norm",
+                "eps_y_norm",
                 "alpha_x",
                 "alpha_y",
+                "beta_x",
+                "beta_y",
             ]
             for i in range(6):
                 keys.append("mean_{}".format(i))
@@ -285,7 +287,7 @@ class BunchMonitor:
         if _mpi_rank == 0:
             self.history["position"] = position
             self.history["node"] = node.getName()
-            self.history["n_parts"] = bunch_size_global
+            self.history["size"] = bunch_size_global
             self.history["gamma"] = gamma
             self.history["beta"] = beta
             self.history["energy"] = bunch.getSyncParticle().kinEnergy()
@@ -705,3 +707,16 @@ def add_aperture_nodes_to_drifts(
             position += parent_node.getLength(index)   
     return child_nodes
 
+
+def save_node_positions(lattice: AccLattice, filename: str = "lattice_nodes.txt") -> None:
+    file = open(filename, "w")
+    file.write("node position length\n")
+    for node in lattice.getNodes():
+        file.write("{} {} {}\n".format(node.getName(), node.getPosition(), node.getLength()))
+    file.close()
+
+
+def save_lattice_structure(lattice: AccLattice, filename: str = "lattice_structure.txt"):
+    file = open(filename, "w")
+    file.write(lattice.structureToText())
+    file.close()

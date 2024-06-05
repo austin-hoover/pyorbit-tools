@@ -32,7 +32,7 @@ bunch:
 lattice:
     xml: null
     seq_start: MEBT
-    seq_stop: SCLHigh
+    seq_stop: HEBT2
     max_drift: 0.010  # [m]
     rf_freq: 402.5e+06  # [Hz]
     apertures:

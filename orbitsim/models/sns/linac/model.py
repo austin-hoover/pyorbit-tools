@@ -294,15 +294,3 @@ class SNS_LINAC:
         for node in self.lattice.getNodes():
             if (isinstance(node, OverlappingQuadsNode) or isinstance(node, AxisField_and_Quad_RF_Gap)):
                 node.setUseLongitudinalFieldOfQuad
-    
-    def save_node_positions(self, filename: str = "lattice_nodes.txt") -> None:
-        file = open(filename, "w")
-        file.write("node position length\n")
-        for node in self.lattice.getNodes():
-            file.write("{} {} {}\n".format(node.getName(), node.getPosition(), node.getLength()))
-        file.close()
-
-    def save_lattice_structure(self, filename: str = "lattice_structure.txt"):
-        file = open(filename, "w")
-        file.write(self.lattice.structureToText())
-        file.close()

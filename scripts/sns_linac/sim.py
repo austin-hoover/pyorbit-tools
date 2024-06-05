@@ -45,17 +45,16 @@ def main(cfg : DictConfig) -> None:
     # Setup
     # ------------------------------------------------------------------------------------
 
-    # MPI
     _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
     _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
     _mpi_size = orbit_mpi.MPI_Comm_size(_mpi_comm)
-    
-    # Print config parameters.
+
+    print("config:")
     print(OmegaConf.to_yaml(cfg))
 
-    # Print output directory.
+    print("output_dir:")
     output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    print("output_dir:", output_dir)
+    print(output_dir)
 
 
     # Lattice
@@ -132,9 +131,13 @@ def main(cfg : DictConfig) -> None:
     else:
         lattice.setLinacTracker(False)
 
-
     aperture_nodes = model.aperture_nodes
     sc_nodes = model.sc_nodes
+
+
+    # Save lattice structure to file.
+    orbitsim.linac.save_node_positions(lattice, os.path.join(output_dir, "lattice_nodes.txt"))
+    orbitsim.linac.save_lattice_structure(lattice, os.path.join(output_dir, "lattice_structure.txt"))
 
     
     # Bunch
