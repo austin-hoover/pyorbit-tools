@@ -34,7 +34,7 @@ def intrinsic_emittances(cov: np.ndarray) -> tuple[float]:
 
 
 def twiss_2d(cov: np.ndarray) -> tuple[float]:
-    eps = emittance_2d(cov)
+    eps = emittance(cov)
     beta = cov[0, 0] / eps
     alpha = -cov[0, 1] / eps
     return (alpha, beta)

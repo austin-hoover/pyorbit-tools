@@ -35,6 +35,7 @@ from orbitsim.bunch import get_z_to_phase_coeff
 from orbitsim.misc import get_lorentz_factors
 from orbitsim.stats import apparent_emittances
 from orbitsim.stats import intrinsic_emittances
+from orbitsim.stats import twiss_2d
 
 
 def unnormalize_emittances(
@@ -231,6 +232,10 @@ class BunchMonitor:
                 "eps_xz",
                 "eps_yz",
                 "eps_xyz",
+                "beta_x",
+                "beta_y",
+                "alpha_x",
+                "alpha_y",
             ]
             for i in range(6):
                 keys.append("mean_{}".format(i))
@@ -339,6 +344,15 @@ class BunchMonitor:
             self.history["eps_xz"] = eps_xz
             self.history["eps_yz"] = eps_yz
             self.history["eps_xyz"] = eps_xyz
+
+        # Compute statistical twiss parameters.
+        if _mpi_rank == 0:
+            alpha_x, beta_x = twiss_2d(cov[0:2, 0:2])
+            alpha_y, beta_y = twiss_2d(cov[2:4, 2:4])
+            self.history["alpha_x"] = alpha_x
+            self.history["alpha_y"] = alpha_y
+            self.history["beta_x"] = beta_x
+            self.history["beta_y"] = beta_y
 
         # Measure maximum phase space coordinates.
         extrema_calculator = BunchExtremaCalculator()
