@@ -196,30 +196,41 @@ def main(cfg : DictConfig) -> None:
         pass
     else:
         # Sample coordinates from distribution function.
-        alpha_x = cfg.bunch.alpha_x
-        alpha_y = cfg.bunch.alpha_y
-        alpha_z = cfg.bunch.alpha_z
-        beta_x = cfg.bunch.beta_x
-        beta_y = cfg.bunch.beta_y
-        beta_z = cfg.bunch.beta_z
-        eps_x = cfg.bunch.eps_x
-        eps_y = cfg.bunch.eps_y
-        eps_z = cfg.bunch.eps_z
-    
+        dist_kws = dict(cfg.bunch.dist)
+        dist_name = dist_kws.pop("name")
+        alpha_x = dist_kws.pop("alpha_x")
+        alpha_y = dist_kws.pop("alpha_y")
+        alpha_z = dist_kws.pop("alpha_z")
+        beta_x = dist_kws.pop("beta_x")
+        beta_y = dist_kws.pop("beta_y")
+        beta_z = dist_kws.pop("beta_z")
+        eps_x = dist_kws.pop("eps_x")
+        eps_y = dist_kws.pop("eps_y")
+        eps_z = dist_kws.pop("eps_z")
+
         (eps_x, eps_y, eps_z) = unnormalize_emittances(mass, kin_energy, eps_x, eps_y, eps_z)
         beta_z = unnormalize_beta_z(mass, kin_energy, beta_z)
+
+        dist_constructors = {
+            "gaussian": GaussDist3D,
+            "kv": KVDist3D,
+            "waterbag": WaterBagDist3D,
+        }
+        dist_constructor = dist_constructors[dist_name]
         
-        dist = WaterBagDist3D(
+        dist = dist_constructor(
             TwissContainer(alpha_x, beta_x, eps_x),
             TwissContainer(alpha_y, beta_y, eps_y),
             TwissContainer(alpha_z, beta_z, eps_z),
+            **dist_kws
         )
+        sample = dist.getCoordinates
         
         size = cfg.bunch.size
         if size is None:
             size = 100_000
 
-        bunch = orbitsim.bunch.generate(sample=dist.getCoordinates, size=size, bunch=bunch)
+        bunch = orbitsim.bunch.generate(sample=sample, size=size, bunch=bunch)
 
     # Set macroparticle size.
     bunch = orbitsim.bunch.set_current(bunch=bunch, current=cfg.bunch.current, frequency=cfg.lattice.rf_freq)
