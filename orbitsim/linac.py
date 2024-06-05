@@ -344,6 +344,8 @@ class BunchMonitor:
             self.history["eps_xz"] = eps_xz
             self.history["eps_yz"] = eps_yz
             self.history["eps_xyz"] = eps_xyz
+            self.history["eps_x_norm"] = eps_x * (beta * gamma)
+            self.history["eps_y_norm"] = eps_y * (beta * gamma)
 
         # Compute statistical twiss parameters.
         if _mpi_rank == 0:
