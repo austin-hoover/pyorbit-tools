@@ -21,8 +21,10 @@ from orbit.lattice import AccLattice
 from orbit.lattice import AccNode
 from orbit.py_linac.lattice import BaseLinacNode
 
-from .bunch import get_z_to_phase_coeff
-from .misc import get_lorentz_factors
+from orbitsim.bunch import get_z_to_phase_coeff
+from orbitsim.misc import get_lorentz_factors
+from orbitsim.stats import apparent_emittances
+from orbitsim.stats import intrinsic_emittances
 
 
 def unnormalize_emittances(
@@ -132,6 +134,7 @@ class BunchMonitor:
         verbose: bool = True,
         rf_frequency: float = 402.5e+06,
         history_filename: str = None,
+        last_node_name: str = None,
     ) -> None:
         """Constructor.
         
@@ -200,12 +203,24 @@ class BunchMonitor:
                 "z_rms",
                 "z_rms_deg",
                 "z_to_phase_coeff",
+                "xp_rms",
+                "yp_rms",
+                "de_rms",
                 "x_min",
                 "x_max",
                 "y_min",
                 "y_max",
                 "z_min",
                 "z_max",
+                "eps_x",
+                "eps_y",
+                "eps_z",
+                "eps_1",
+                "eps_2",
+                "eps_xy",
+                "eps_xz",
+                "eps_yz",
+                "eps_xyz",
             ]
             for i in range(6):
                 keys.append("mean_{}".format(i))
@@ -213,7 +228,7 @@ class BunchMonitor:
                 for j in range(i + 1):
                     keys.append("cov_{}-{}".format(j, i))
                     
-            self.history = {}
+            self.history = dict()
             for key in keys:
                 self.history[key] = None
 
@@ -228,13 +243,15 @@ class BunchMonitor:
     def __call__(self, params_dict: dict, force_update: bool = False) -> None:
         _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
         _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
+
+        if self.index == 0:
+            force_update = True
         
         # Update position; decide whether to proceed.
         position = params_dict["path_length"] + self.position_offset
         if not force_update:
-            if self.index > 0:
-                if (position - self.position) < self.stride:
-                    return
+            if self.stride > (position - self.position):
+                return
         self.position = position
         
         # Update clock.
@@ -258,29 +275,30 @@ class BunchMonitor:
             self.history["beta"] = beta
             self.history["energy"] = bunch.getSyncParticle().kinEnergy()
 
-        # Measure covariance matrix.
+        # Measure mean and covariance.
         twiss_analysis = BunchTwissAnalysis()
         order = 2
         twiss_analysis.computeBunchMoments(bunch, order, self.dispersion_flag, self.emit_norm_flag)
-        
+
+        mean = np.zeros(6)
         for i in range(6):
             key = "mean_{}".format(i)
             value = twiss_analysis.getAverage(i)
             if _mpi_rank == 0:
                 self.history[key] = value
-                
+            mean[i] = value
+
+        cov = np.zeros((6, 6))
         for i in range(6):
             for j in range(i + 1):
                 key = "cov_{}-{}".format(j, i)
                 value = twiss_analysis.getCorrelation(j, i)
                 if _mpi_rank == 0:
                     self.history[key] = value
+                cov[i, j] = cov[j, i] = value
                                                    
         if _mpi_rank == 0:
-            x_rms = np.sqrt(self.history["cov_0-0"])
-            y_rms = np.sqrt(self.history["cov_2-2"])
-            z_rms = np.sqrt(self.history["cov_4-4"])
-            
+            (x_rms, xp_rms, y_rms, yp_rms, z_rms, de_rms) = np.sqrt(np.diag(cov))
             z_to_phase_coeff = get_z_to_phase_coeff(bunch, self.rf_frequency)
             z_rms_deg = -z_to_phase_coeff * z_rms
             
@@ -289,8 +307,30 @@ class BunchMonitor:
             self.history["z_rms"] = z_rms
             self.history["z_rms_deg"] = z_rms_deg
             self.history["z_to_phase_coeff"] = z_to_phase_coeff
-            
-        # Measure max phase space coordinates.
+            self.history["xp_rms"] = xp_rms
+            self.history["yp_rms"] = yp_rms
+            self.history["de_rms"] = de_rms
+
+        # Compute rms emittances for convenience.
+        if _mpi_rank == 0:
+            (eps_x, eps_y, eps_z) = apparent_emittances(cov[:6, :6])
+            (eps_1, eps_2) = intrinsic_emittances(cov[:4, :4])
+            eps_xy = np.sqrt(np.linalg.det(cov[:4, :4]))
+            eps_xz = np.sqrt(np.linalg.det(cov[np.ix_([0, 1, 4, 5], [0, 1, 4, 5])]))
+            eps_yz = np.sqrt(np.linalg.det(cov[np.ix_([2, 3, 4, 5], [2, 3, 4, 5])]))
+            eps_xyz = np.sqrt(np.linalg.det(cov[:6, :6]))
+
+            self.history["eps_x"] = eps_x
+            self.history["eps_y"] = eps_y
+            self.history["eps_z"] = eps_z
+            self.history["eps_1"] = eps_1
+            self.history["eps_2"] = eps_2
+            self.history["eps_xy"] = eps_xy
+            self.history["eps_xz"] = eps_xz
+            self.history["eps_yz"] = eps_yz
+            self.history["eps_xyz"] = eps_xyz
+
+        # Measure maximum phase space coordinates.
         extrema_calculator = BunchExtremaCalculator()
         (x_min, x_max, y_min, y_max, z_min, z_max) = extrema_calculator.extremaXYZ(bunch)
         if _mpi_rank == 0:
@@ -315,29 +355,28 @@ class BunchMonitor:
                 "node={}",
             ]
             fstr = " ".join(fstr)
-            print(
-                fstr.format(
-                    self.index,
-                    time_ellapsed,
-                    position,
-                    1000.0 * bunch.getSyncParticle().kinEnergy(),
-                    1000.0 * x_rms,
-                    1000.0 * y_rms,
-                    z_rms_deg,
-                    bunch_size_global,
-                    node.getName(),
-                )
+            message = fstr.format(
+                self.index,
+                time_ellapsed,
+                position,
+                1000.0 * bunch.getSyncParticle().kinEnergy(),
+                1000.0 * x_rms,
+                1000.0 * y_rms,
+                z_rms_deg,
+                bunch_size_global,
+                node.getName(),
             )
+            print(message)
                                                 
         # Write phase space coordinates to file.
-        if (self.write is not None) and (self.stride_write is not None):
-            if ((position - self.last_write_position) >= self.stride_write) or (self.index == 0):
+        if self.write is not None:
+            if force_update or (self.stride_write <= (position - self.last_write_position)):
                 self.write(bunch, tag=node.getName())
                 self.last_write_position = position
 
         # Call plotting routines.
-        if (self.plot is not None) and (self.stride_plot is not None) and (_mpi_rank == 0):
-            if (position - last_plot_position) >= self.stride_plot:
+        if self.plot is not None and _mpi_rank == 0:
+            if force_update or (self.stride_plot <= (position - self.last_plot_position)):
                 info = dict()
                 for key in self.history:
                     if self.history[key]:
@@ -350,7 +389,7 @@ class BunchMonitor:
                 info["beta"] = beta
                 
                 self.plot(bunch, info=info, verbose=self.verbose)
-                last_plot_position = position
+                self.last_plot_position = position
                 
         # Write new line to history file.
         if _mpi_rank == 0 and self.history_file is not None:

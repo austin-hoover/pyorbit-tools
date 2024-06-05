@@ -33,11 +33,19 @@ bunch:
 lattice:
     xml: null
     seq_start: MEBT
-    seq_stop: HEBT2
+    seq_stop: SCLHigh
     max_drift: 0.010  # [m]
-    rf_frequency: 402.5e+06  # [Hz]
-    spacecharge: false  # switch
+    rf_freq: 402.5e+06  # [Hz]
+    sc: false  # switch
     rf: false  # switch
+
+sc:
+    solver: fft
+    gridx: 64
+    gridy: 64
+    gridz: 64
+    path_length_min: 0.010
+    n_ellipsoids: 5 
 
 start: 0.0
 stop: null

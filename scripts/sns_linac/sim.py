@@ -15,12 +15,16 @@ from orbit.core.bunch import Bunch
 from orbit.core.linac import BaseRfGap
 from orbit.core.linac import MatrixRfGap
 from orbit.core.linac import RfGapTTF
+from orbit.core.spacecharge import SpaceChargeCalc3D
+from orbit.core.spacecharge import SpaceChargeCalcUnifEllipse
 from orbit.bunch_generators import GaussDist3D
 from orbit.bunch_generators import KVDist3D
 from orbit.bunch_generators import WaterBagDist3D
 from orbit.bunch_generators import TwissContainer
 from orbit.lattice import AccLattice
 from orbit.lattice import AccNode
+from orbit.space_charge.sc3d import setSC3DAccNodes
+from orbit.space_charge.sc3d import setUniformEllipsesSCAccNodes
 
 import orbitsim.bunch
 import orbitsim.linac
@@ -58,7 +62,7 @@ def main(cfg : DictConfig) -> None:
         sequence_start=cfg.lattice.seq_start,
         sequence_stop=cfg.lattice.seq_stop,
         max_drift=cfg.lattice.max_drift,
-        rf_frequency=cfg.lattice.rf_frequency,
+        rf_frequency=cfg.lattice.rf_freq,
     )
 
     lattice = model.lattice
@@ -66,6 +70,31 @@ def main(cfg : DictConfig) -> None:
     for rf_gap in lattice.getRF_Gaps():
     	rf_gap.setCppGapModel(RfGapTTF())
 
+    if cfg.lattice.sc:
+        solver = "fft"
+        gridx = cfg.sc.gridx
+        gridy = cfg.sc.gridy
+        gridz = cfg.sc.gridz
+        path_length_min = cfg.sc.path_length_min
+        n_ellipsoids = cfg.sc.n_ellipsoids
+        verbose = True
+        
+        sc_nodes = []
+        if solver == "fft":
+            sc_calc = SpaceChargeCalc3D(gridx, gridy, gridz)
+            sc_nodes = setSC3DAccNodes(lattice, path_length_min, sc_calc)
+        elif solver == "ellipsoid":
+            sc_calc = SpaceChargeCalcUnifEllipse(n_ellipsoids)
+            sc_nodes = setUniformEllipsesSCAccNodes(lattice, path_length_min, sc_calc)
+
+        if verbose and (_mpi_rank == 0) and (sc_nodes is not None):
+            lengths = [node.getLengthOfSC() for node in sc_nodes]
+            min_length = min(min(lengths), lattice.getLength())
+            max_length = max(max(lengths), 0.0)
+            print(f"Added {len(sc_nodes)} space charge nodes (solver={solver})")
+            print(f"min sc node length = {min_length}".format(min_length))
+            print(f"max sc node length = {min_length}".format(max_length))
+        
     
     # Bunch
     # ------------------------------------------------------------------------------------
@@ -110,7 +139,7 @@ def main(cfg : DictConfig) -> None:
         bunch = orbitsim.bunch.generate(sample=dist.getCoordinates, size=size, bunch=bunch)
 
     # Set macro-particle size.
-    bunch = orbitsim.bunch.set_current(bunch=bunch, current=cfg.bunch.current, frequency=cfg.lattice.rf_frequency)
+    bunch = orbitsim.bunch.set_current(bunch=bunch, current=cfg.bunch.current, frequency=cfg.lattice.rf_freq)
 
 
     # Diagnostics
@@ -136,7 +165,7 @@ def main(cfg : DictConfig) -> None:
         emit_norm_flag=False,
         position_offset=0.0,
         verbose=True,
-        rf_frequency=cfg.lattice.rf_frequency,
+        rf_frequency=cfg.lattice.rf_freq,
         history_filename=os.path.join(output_dir, "history.dat"),
     )
 
@@ -165,6 +194,8 @@ def main(cfg : DictConfig) -> None:
         stop=cfg.stop,
         verbose=True,
     )
+
+    print("output_dir:", output_dir)
 
     
 if __name__ == "__main__":
