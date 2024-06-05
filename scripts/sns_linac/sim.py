@@ -23,6 +23,10 @@ from orbit.bunch_generators import WaterBagDist3D
 from orbit.bunch_generators import TwissContainer
 from orbit.lattice import AccLattice
 from orbit.lattice import AccNode
+from orbit.py_linac.lattice_modifications import Add_quad_apertures_to_lattice
+from orbit.py_linac.lattice_modifications import Add_rfgap_apertures_to_lattice
+from orbit.py_linac.lattice_modifications import AddMEBTChopperPlatesAperturesToSNS_Lattice
+from orbit.py_linac.lattice_modifications import AddScrapersAperturesToLattice
 from orbit.space_charge.sc3d import setSC3DAccNodes
 from orbit.space_charge.sc3d import setUniformEllipsesSCAccNodes
 
@@ -57,7 +61,9 @@ def main(cfg : DictConfig) -> None:
 
     # Lattice
     # ------------------------------------------------------------------------------------
-
+    #
+    # To do: move setup functions to SNS_LINAC class)
+    
     model = SNS_LINAC(
         sequence_start=cfg.lattice.seq_start,
         sequence_stop=cfg.lattice.seq_stop,
@@ -66,10 +72,26 @@ def main(cfg : DictConfig) -> None:
     )
 
     lattice = model.lattice
-    
-    for rf_gap in lattice.getRF_Gaps():
-    	rf_gap.setCppGapModel(RfGapTTF())
 
+    # Set RF gap model
+    rf_gap_models = {
+        "base": BaseRfGap,
+        "matrix": MatrixRfGap,
+        "ttf": RfGapTTF,
+    }
+    rf_gap_model = rf_gap_models[cfg.rf.gap]
+    for rf_gap_node in lattice.getRF_Gaps():
+    	rf_gap_node.setCppGapModel(rf_gap_model())
+
+    # Set overlapping fields model.
+    if cfg.lattice.overlap:
+        linac.set_overlapping_rf_and_quad_fields(
+            sequences=linac.sequences,
+            z_step=0.002,
+            xml_filename=os.path.join(input_dir, "sns_rf_fields.xml"),
+        )
+
+    # Add space charge nodes.
     if cfg.lattice.sc:
         solver = "fft"
         gridx = cfg.sc.gridx
@@ -94,7 +116,68 @@ def main(cfg : DictConfig) -> None:
             print(f"Added {len(sc_nodes)} space charge nodes (solver={solver})")
             print(f"min sc node length = {min_length}".format(min_length))
             print(f"max sc node length = {min_length}".format(max_length))
+
+    # Add aperture nodes.
+    if cfg.lattice.apertures.transverse:
+        aperture_nodes = Add_quad_apertures_to_lattice(lattice)
+        aperture_nodes = Add_rfgap_apertures_to_lattice(lattice, aperture_nodes)
+        aperture_nodes = AddMEBTChopperPlatesAperturesToSNS_Lattice(lattice, aperture_nodes)        
+        size_x = cfg.apertures.scrape.x
+        size_y = cfg.apertures.scrape.y
+        aperture_nodes = AddScrapersAperturesToLattice(lattice, "MEBT_Diag:H_SCRP", size_x, size_y, aperture_nodes)    
+        aperture_nodes = AddScrapersAperturesToLattice(lattice, "MEBT_Diag:V_SCRP", size_x, size_y, aperture_nodes)
+
+    if cfg.lattice.apertures.phase:
+        phase_min = cfg.apertures.phase.min
+        phase_max = cfg.apertures.phase.max
+        linac.add_phase_aperture_nodes(
+            classes=[
+                BaseRF_Gap, 
+                AxisFieldRF_Gap, 
+                AxisField_and_Quad_RF_Gap,
+                Quad, 
+                OverlappingQuadsNode,
+            ],
+            phase_min=phase_min,
+            phase_max=phase_max,
+            verbose=True,
+        )
+        linac.add_phase_aperture_nodes_drifts(
+            phase_min=phase_min,
+            phase_max=phase_max,
+            start=0.0,
+            stop=4.0,
+            step=0.050,
+            verbose=True,
+        )
         
+    if cfg.lattice.apertures.energy:
+        energy_min = cfg.apertures.energy.min
+        energy_max = cfg.apertures.energy.max
+        linac.add_energy_aperture_nodes(
+            classes=[
+                BaseRF_Gap, 
+                AxisFieldRF_Gap, 
+                AxisField_and_Quad_RF_Gap,
+                Quad, 
+                OverlappingQuadsNode,
+            ],
+            energy_min=energy_min,
+            energy_max=energy_max,
+            verbose=True,
+        )
+        linac.add_energy_aperture_nodes_drifts(
+            energy_min=energy_min,
+            energy_max=energy_max,
+            step=0.1,
+            verbose=True,
+        )
+    
+        
+    # Set tracking module.
+    if cfg.tracker == "linac":
+        pass
+    
     
     # Bunch
     # ------------------------------------------------------------------------------------
@@ -138,7 +221,7 @@ def main(cfg : DictConfig) -> None:
 
         bunch = orbitsim.bunch.generate(sample=dist.getCoordinates, size=size, bunch=bunch)
 
-    # Set macro-particle size.
+    # Set macroparticle size.
     bunch = orbitsim.bunch.set_current(bunch=bunch, current=cfg.bunch.current, frequency=cfg.lattice.rf_freq)
 
 

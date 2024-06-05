@@ -367,6 +367,7 @@ class BunchMonitor:
                 node.getName(),
             )
             print(message)
+            sys.stdout.flush()
                                                 
         # Write phase space coordinates to file.
         if self.write is not None:
