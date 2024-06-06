@@ -36,6 +36,7 @@ from orbit.py_linac.lattice_modifications import Replace_BaseRF_Gap_and_Quads_to
 from orbit.py_linac.lattice_modifications import Replace_BaseRF_Gap_to_AxisField_Nodes
 from orbit.py_linac.lattice_modifications import Replace_Quads_to_OverlappingQuads_Nodes
 from orbit.py_linac.linac_parsers import SNS_LinacLatticeFactory
+from orbit.py_linac.overlapping_fields import SNS_EngeFunctionFactory
 from orbit.space_charge.sc3d import setSC3DAccNodes
 from orbit.space_charge.sc3d import setUniformEllipsesSCAccNodes
 
@@ -273,19 +274,26 @@ class SNS_LINAC:
         self, 
         sequences: list[str] = None, 
         z_step: float = 0.002,
-        xml_filename: str = None,
+        cav_names: list[str] = None,
+        fields_dir: str = None,
+        use_longitudinal_quad_field: bool = True,
     ) -> None:
         """Replace overlapping quad/rf nodes in specified sequences."""
-        if xml_filename is None:
-            xml_filename = os.path.join(self.path.parent, "sns_rf_fields.xml")
+        if fields_dir is None:
+            fields_dir = os.path.join(self.path.parent, "data/sns_rf_fields/")
             
         if sequences is None:
-            sequences = self.sequences   
+            sequences = self.sequences
+        sequences = sequences.copy()
+        sequences = [seq for seq in sequences if seq not in ["HEBT1", "HEBT2"]]
 
+        if cav_names is None:
+            cav_names = []
+            
         # Replace hard-edge quads with soft-edge quads; replace zero-length RF gap models
         # with field-on-axis RF gap models. Can be used for any sequences, no limitations.
         Replace_BaseRF_Gap_and_Quads_to_Overlapping_Nodes(
-            self.lattice, z_step, fields_filename, sequences, [], SNS_EngeFunctionFactory
+            self.lattice, z_step, fields_dir, sequences, cav_names, SNS_EngeFunctionFactory
         )
 
         # Add tracking through the longitudinal field component of the quad. The
@@ -293,4 +301,4 @@ class SNS_LINAC:
         # of the quad. 
         for node in self.lattice.getNodes():
             if (isinstance(node, OverlappingQuadsNode) or isinstance(node, AxisField_and_Quad_RF_Gap)):
-                node.setUseLongitudinalFieldOfQuad
+                node.setUseLongitudinalFieldOfQuad(use_longitudinal_quad_field)

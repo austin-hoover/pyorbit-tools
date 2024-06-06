@@ -75,7 +75,7 @@ def main(cfg : DictConfig) -> None:
         model.set_overlapping_rf_and_quad_fields(
             sequences=model.sequences,
             z_step=0.002,
-            xml_filename=None,
+            fields_dir=None,
         )
 
     if cfg.lattice.sc:
