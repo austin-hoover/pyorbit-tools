@@ -3,6 +3,7 @@ from . import hydra
 from . import lattice
 from . import linac
 from . import misc
+from . import models
 from . import points
 from . import ring
 from . import stats
