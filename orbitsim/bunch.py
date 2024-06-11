@@ -51,7 +51,7 @@ def set_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
     return bunch
 
 
-def get_coords(bunch: Bunch, size: int = None) -> np.ndarray:
+def get_coords(bunch: Bunch, size: int = None, axis: tuple[int] = None) -> np.ndarray:
     """Extract the phase space coordinates from the bunch.
 
     If using MPI, this function will return the particles on one MPI node.
@@ -68,6 +68,10 @@ def get_coords(bunch: Bunch, size: int = None) -> np.ndarray:
         coords[i, 3] = bunch.yp(i)
         coords[i, 4] = bunch.z(i)
         coords[i, 5] = bunch.dE(i)
+
+    if axis is not None:
+        coords = coords[:, axis]
+        
     return coords
 
 
