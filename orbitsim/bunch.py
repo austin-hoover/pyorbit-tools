@@ -76,7 +76,7 @@ def get_coords(bunch: Bunch, size: int = None, axis: tuple[int] = None) -> np.nd
 
 
 def set_coords(bunch: Bunch, coords: np.ndarray, verbose: bool = True) -> Bunch:
-    """Assign phase space coordinate array to bunch.
+    """Assign phase space coordinate array to bunch. Old particles are deleted.
 
     bunch : Bunch
         The bunch is resized if space needs to be made for the new particles.
@@ -95,6 +95,8 @@ def set_coords(bunch: Bunch, coords: np.ndarray, verbose: bool = True) -> Bunch:
     _mpi_size = orbit_mpi.MPI_Comm_size(_mpi_comm)
     _mpi_dtype = orbit_mpi.mpi_datatype.MPI_DOUBLE
     _main_rank = 0
+
+    bunch.deleteAllParticles()
 
     _range = range(coords.shape[0])
     if verbose:
