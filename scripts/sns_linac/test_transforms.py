@@ -23,6 +23,7 @@ bunch = Bunch()
 bunch.mass(0.939294)
 bunch.charge(-1.0)
 bunch.getSyncParticle().kinEnergy(1.0012134710494787)
+axis = (0, 1)
 
 orbit_transforms = []
 for diag_node_name in diag_node_names:
