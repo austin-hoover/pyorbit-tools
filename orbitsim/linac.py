@@ -28,14 +28,18 @@ from orbit.py_linac.lattice import Drift
 from orbit.py_linac.lattice import LinacApertureNode
 from orbit.py_linac.lattice import LinacEnergyApertureNode
 from orbit.py_linac.lattice import LinacPhaseApertureNode
+from orbit.py_linac.lattice import LinacTrMatrixGenNode
+from orbit.py_linac.lattice import LinacTrMatricesController
 from orbit.py_linac.lattice import OverlappingQuadsNode 
 from orbit.py_linac.lattice import Quad
 
+import orbitsim.bunch
 from orbitsim.bunch import get_z_to_phase_coeff
 from orbitsim.misc import get_lorentz_factors
 from orbitsim.stats import apparent_emittances
 from orbitsim.stats import intrinsic_emittances
 from orbitsim.stats import twiss_2d
+from orbitsim.utils import orbit_matrix_to_numpy
 
 
 def unnormalize_emittances(
@@ -716,7 +720,138 @@ def save_node_positions(lattice: AccLattice, filename: str = "lattice_nodes.txt"
     file.close()
 
 
-def save_lattice_structure(lattice: AccLattice, filename: str = "lattice_structure.txt"):
+def save_lattice_structure(lattice: AccLattice, filename: str = "lattice_structure.txt") -> None:
     file = open(filename, "w")
     file.write(lattice.structureToText())
     file.close()
+
+
+def estimate_transfer_matrix(
+    lattice: AccLattice, 
+    bunch: Bunch, 
+    index_start: int, 
+    index_stop: int,
+    axis: tuple[int] = None,
+    test_bunch_size: int = 1000,
+    test_bunch_limits: list[tuple[float, float]] = None,
+    seed: int = None,
+) -> np.ndarray:
+    """Estimate lattice transfer matrix."""
+    rng = np.random.default_rng(seed)
+    
+    tmat_parent_nodes = [
+        lattice.getNodes()[index_start],
+        lattice.getNodes()[index_stop],
+    ]
+    tmat_nodes_controller = LinacTrMatricesController()
+    tmat_nodes = tmat_nodes_controller.addTrMatrixGenNodes(lattice, tmat_parent_nodes)
+    tmat_node = tmat_nodes[-1]
+
+    if test_bunch_limits is None:
+        test_bunch_limits = [
+            (-0.020, 0.020),
+            (-0.020, 0.020),
+            (-0.020, 0.020),
+            (-0.020, 0.020),
+            (-0.001, 0.001),
+            (-0.000, 0.000),
+        ]
+    test_bunch_lb, test_bunch_ub = list(zip(*test_bunch_limits))
+    test_bunch_coords = rng.uniform(test_bunch_lb, test_bunch_ub, size=(test_bunch_size, 6))
+    
+    test_bunch = Bunch()
+    bunch.copyEmptyBunchTo(test_bunch)
+    for i in range(test_bunch_size):
+        test_bunch.addParticle(*test_bunch_coords[i, :])
+
+    lattice.trackBunch(test_bunch, index_start=index_start, index_stop=index_stop)
+
+    matrix = tmat_node.getTransportMatrix()
+    matrix = orbit_matrix_to_numpy(matrix)
+    if axis is not None:
+        matrix = matrix[np.ix_(axis, axis)]
+    return matrix
+
+
+class LinacTransform:
+    """Wrapper to transform numpy arrays using accelerator lattice."""
+    def __init__(
+        self, 
+        lattice: AccLattice, 
+        bunch: Bunch,
+        index_start: int,
+        index_stop: int,
+        axis: tuple[int] = None,
+        linear: bool = False,
+    ) -> None:
+        self.lattice = lattice
+        self.bunch = bunch        
+        self.index_start = index_start
+        self.index_stop = index_stop
+        
+        self.axis = axis
+        if self.axis is None:
+            self.axis = tuple(range(6))
+            
+        self.linear = linear
+        
+        self.matrix = estimate_transfer_matrix(
+            lattice=self.lattice, 
+            bunch=self.bunch, 
+            index_start=self.index_start, 
+            index_stop=self.index_stop, 
+            axis=self.axis,
+            test_bunch_size=1000,
+            test_bunch_limits=None,
+            seed=None,
+        )
+        self.matrix_inv = np.linalg.inv(self.matrix)
+        
+    def set_linear(self, linear: bool) -> None:
+        self.linear = linear
+
+    def get_new_bunch(self) -> Bunch:
+        bunch = Bunch()
+        self.bunch.copyEmptyBunchTo(bunch)
+        return bunch
+
+    def __call__(self, x: np.ndarray, *args, **kwargs) -> np.ndarray:
+        return self.forward(x, *args, **kwargs)
+
+    def forward(self, x: np.ndarray, linear: bool = None) -> np.ndarray:    
+        if linear is None:
+            linear = self.linear
+            
+        if linear:
+            return np.matmul(x, self.matrix.T)
+            
+        x_new = np.zeros((x.shape[0], 6))
+        x_new[:, self.axis] = x
+
+        bunch = self.get_new_bunch()
+        bunch = orbitsim.bunch.set_coords(bunch, x_new, verbose=False)
+        self.lattice.trackBunch(bunch, index_start=self.index_start, index_stop=self.index_stop)
+        U = orbitsim.bunch.get_coords(bunch)
+        U = U[:, self.axis]
+        return U
+
+    def inverse(self, u: np.ndarray, linear: bool = None) -> np.ndarray:
+        if linear is None:
+            linear = self.linear
+            
+        if linear:
+            return np.matmul(u, self.matrix_inv.T)
+
+        u_new = np.zeros((u.shape[0], 6))
+        u_new[:, self.axis] = u_new
+
+        bunch = self.get_new_bunch()
+        bunch = orbitsim.bunch.set_coords(bunch, u_new, verbose=False)
+        bunch = orbitsim.bunch.reverse(bunch)
+        self.lattice.reverseOrder()
+        self.lattice.trackBunch(bunch, index_start=self.index_stop, index_stop=self.index_start)
+        self.lattice.reverseOrder()
+        bunch = orbitsim.bunch.reverse(bunch)
+        x = orbitsim.bunch.get_coords(bunch)
+        x = x[:, self.axis]
+        return x
