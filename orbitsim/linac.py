@@ -342,10 +342,10 @@ def track_reverse(
     See `track` method arguments.
     """
     lattice.reverseOrder()
-    bunch = pyorbit_sim.bunch_utils.reverse(bunch)
+    bunch = orbitsim.bunch.reverse(bunch)
     params_dict = track(bunch, lattice, monitor=monitor, start=stop, stop=start, verbose=verbose)
     lattice.reverseOrder()
-    bunch = pyorbit_sim.bunch_utils.reverse(bunch)
+    bunch = orbitsim.bunch.reverse(bunch)
     return params_dict
 
 
@@ -378,6 +378,18 @@ def track_rms(
     )
     history = pd.DataFrame().from_dict(monitor.history)
     return history
+
+
+def backtrack(lattice: AccLattice, bunch: Bunch, index_start: int, index_stop: int) -> Bunch:
+    index_start = len(lattice.getNodes()) - 1 - index_start
+    index_stop  = len(lattice.getNodes()) - 1 - index_stop
+    
+    lattice.reverseOrder()
+    bunch = orbitsim.bunch.reverse(bunch)
+    lattice.trackBunch(bunch, index_start=index_start, index_stop=index_stop)
+    bunch = orbitsim.bunch.reverse(bunch)
+    lattice.reverseOrder()
+    return bunch
 
 
 def estimate_transfer_matrix(
