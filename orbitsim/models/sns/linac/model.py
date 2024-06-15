@@ -95,9 +95,10 @@ class SNS_LINAC:
         self.aperture_nodes = []
         self.sc_nodes = []
 
-        print("Initialized lattice")
-        print("xml file = {}".format(self.xml_filename))
-        print("lattice length = {:.3f} [m])".format(self.lattice.getLength()))
+        if verbose:
+            print("Initialized lattice")
+            print("xml file = {}".format(self.xml_filename))
+            print("lattice length = {:.3f} [m])".format(self.lattice.getLength()))
 
     def set_rf_gap_model(self, name: str = "ttf") -> None:            
         rf_gap_model_constructors = {
