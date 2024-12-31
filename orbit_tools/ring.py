@@ -188,7 +188,7 @@ class Monitor:
             if output_dir is not None:
                 self.file = open(os.path.join(output_dir, "history.dat"), "w")
                 line = ",".join(list(self.history))
-                line = line[:-1] + "\n"
+                line = line + "\n"
                 self.file.write(line)
     
     def __call__(self, params_dict: dict) -> None:
