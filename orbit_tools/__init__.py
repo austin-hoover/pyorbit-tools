@@ -1,5 +1,4 @@
 from . import bunch
-from . import hydra
 from . import lattice
 from . import linac
 from . import misc
