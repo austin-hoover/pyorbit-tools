@@ -2,48 +2,178 @@ import math
 import os
 from typing import Any
 from typing import Callable
-from typing import List
 from typing import Iterable
-from typing import Tuple
-from typing import Union
+from typing import Optional
 
 import numpy as np
 from tqdm import tqdm
 
-import orbit.bunch_generators
-import orbit.core
-import orbit.diagnostics
-import orbit.lattice
-import orbit.teapot
-import orbit.utils
 from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
+from orbit.bunch_generators import TwissContainer
+from orbit.utils.consts import speed_of_light
+
+from .cov import norm_matrix
 
 
-def get_intensity(current: float, frequency: float, charge: float) -> float:
+def get_part_coords(bunch: Bunch, index: int) -> list[float]:
+    x = bunch.x(index)
+    y = bunch.y(index)
+    z = bunch.z(index)
+    xp = bunch.xp(index)
+    yp = bunch.yp(index)
+    de = bunch.dE(index)
+    return [x, xp, y, yp, z, de]
+
+
+def set_part_coords(bunch: Bunch, index: int, coords: list[float]) -> Bunch:
+    (x, xp, y, yp, z, de) = coords
+    bunch.x(index, x)
+    bunch.y(index, y)
+    bunch.z(index, z)
+    bunch.xp(index, xp)
+    bunch.yp(index, yp)
+    bunch.dE(index, de)
+    return bunch
+
+
+def get_bunch_coords(bunch: Bunch, axis: tuple[int, ...] = None) -> np.ndarray:
+    if axis is None:
+        axis = tuple(range(6))
+
+    X = np.zeros((bunch.getSize(), 6))
+    for i in range(bunch.getSize()):
+        X[i, 0] = bunch.x(i)
+        X[i, 1] = bunch.xp(i)
+        X[i, 2] = bunch.y(i)
+        X[i, 3] = bunch.yp(i)
+        X[i, 4] = bunch.z(i)
+        X[i, 5] = bunch.dE(i)
+    return X[:, axis]
+
+
+def set_bunch_coords(bunch: Bunch, X: np.ndarray, axis: tuple[int, ...] = None) -> Bunch:
+    if axis is None:
+        axis = tuple(range(6))
+
+    if X.shape[0] != bunch.getSize():
+        bunch = resize_bunch(bunch, X.shape[0])
+
+    X_all = np.zeros((X.shape[0], 6))
+    X_all[:, axis] = X
+
+    coords = np.zeros(6)
+    for i in range(X_all.shape[0]):
+        set_part_coords(bunch, i, X_all[i, :])
+    return bunch
+
+
+def resize_bunch(bunch: Bunch, size: int) -> Bunch:
+    X_old = get_bunch_coords(bunch)
+    X_new = np.zeros((size, 6))
+
+    if X_old.shape[0] <= X_new.shape[0]:
+        X_new[:X_old.shape[0]] = X_old
+    else:
+        X_new = X_old[:X_new.shape[0]]
+
+    bunch.deleteAllParticles()
+    for i in range(X_new.shape[0]):
+        bunch.addParticle(*X_new[i, :])
+    return bunch
+
+
+def reverse_bunch(bunch: Bunch) -> Bunch:
+    size = bunch.getSize()
+    for i in range(size):
+        bunch.xp(i, -bunch.xp(i))
+        bunch.yp(i, -bunch.yp(i))
+        bunch.z(i, -bunch.z(i))
+    return bunch
+
+
+def get_bunch_centroid(bunch: Bunch) -> np.ndarray:
+    calc = BunchTwissAnalysis()
+    calc.analyzeBunch(bunch)
+    return np.array([calc.getAverage(i) for i in range(6)])
+
+
+def set_bunch_centroid(bunch: Bunch, centroid: np.ndarray) -> Bunch:
+    centroid_shift = centroid - get_bunch_centroid(bunch)
+    bunch = shift_bunch_centroid(bunch, *centroid_shift)
+    return bunch
+
+
+def shift_bunch_centroid(
+    bunch: Bunch,
+    x: float = 0.0,
+    xp: float = 0.0,
+    y: float = 0.0,
+    yp: float = 0.0,
+    z: float = 0.0,
+    de: float = 0.0,
+) -> Bunch:
+    for i in range(bunch.getSize()):
+        bunch.x(i, bunch.x(i) + x)
+        bunch.y(i, bunch.y(i) + y)
+        bunch.z(i, bunch.z(i) + z)
+        bunch.xp(i, bunch.xp(i) + xp)
+        bunch.yp(i, bunch.yp(i) + yp)
+        bunch.dE(i, bunch.dE(i) + de)
+    return bunch
+
+
+def set_bunch_cov(bunch: Bunch, covariance_matrix: np.ndarray, block_diag: bool = True) -> Bunch:
+    X_old = get_bunch_coords(bunch)
+    S_old = np.cov(X_old.T)
+
+    # Assume block-diagonal covariance matrix
+    V_old_inv = norm_matrix(S_old, scale=True, block_diag=block_diag)
+    V_old = np.linalg.inv(V_old_inv)
+
+    S_new = np.copy(covariance_matrix)
+    V_new_inv = norm_matrix(S_new, scale=True, block_diag=block_diag)
+    V_new = np.linalg.inv(V_new_inv)
+
+    M = np.matmul(V_new, V_old_inv)
+    X_new = np.matmul(X_old, M.T)
+
+    bunch = set_bunch_coords(bunch, X_new)
+    return bunch
+
+
+def transform_bunch(bunch: Bunch, transform: Callable, axis: tuple[int, ...] = None) -> Bunch:
+    if axis is None:
+        axis = tuple(range(6))
+
+    X = get_bunch_coords(bunch)
+    X[:, axis] = transform(X[:, axis])
+    return set_bunch_coords(bunch, X)
+
+
+def transform_bunch_linear(bunch: Bunch, matrix: np.ndarray, axis: tuple[int, ...] = None) -> Bunch:
+    return transform_bunch(bunch, lambda x: np.matmul(x, matrix.T), axis=axis)
+
+
+def get_z_to_phase_coefficient(bunch: Bunch, frequency: float) -> float:
+    velocity = bunch.getSyncParticle().beta() * speed_of_light
+    wavelength = velocity / frequency
+    coefficient = -360.0 / wavelength
+    return coefficient
+
+
+def current_to_intensity(current: float, frequency: float, charge: float) -> float:
     """Return the bunch intensity from beam current [A] and bunch frequency [Hz]."""
     return (current / frequency) / (abs(charge) * orbit.utils.consts.charge_electron)
 
 
-def get_z_to_phase_coeff(bunch: Bunch, frequency: float) -> float:
-    """Return coefficient to calculate rf phase [degrees] from z [m]."""
-    wavelength = orbit.utils.consts.speed_of_light / frequency
-    coeff = -360.0 / (bunch.getSyncParticle().beta() * wavelength)
-    return coeff
-
-
-def get_z_rms_deg(bunch: Bunch, frequency: float, z_rms: float) -> float:
-    """Convert <zz> [m] to <phi phi> [deg]."""
-    return -get_z_to_phase_coeff(bunch, frequency) * z_rms
-
-
-def set_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
+def set_bunch_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
     """Set bunch macroparticle size from current and bunch frequency.
 
     Assumes bunch charge is already set.
     """
-    intensity = get_intensity(current=current, frequency=frequency, charge=bunch.charge())
+    intensity = current_to_intensity(current=current, frequency=frequency, charge=bunch.charge())
     bunch_size_global = bunch.getSizeGlobal()
     if bunch_size_global > 0:
         macro_size = intensity / bunch_size_global
@@ -51,71 +181,7 @@ def set_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
     return bunch
 
 
-def get_coords(bunch: Bunch, size: int = None, axis: tuple[int] = None) -> np.ndarray:
-    """Extract the phase space coordinates from the bunch.
-
-    If using MPI, this function will return the particles on one MPI node.
-    """
-    if size is None:
-        size = bunch.getSize()
-    size = min(size, bunch.getSize())
-    
-    coords = np.zeros((size, 6))
-    for i in range(size):
-        coords[i, 0] = bunch.x(i)
-        coords[i, 1] = bunch.xp(i)
-        coords[i, 2] = bunch.y(i)
-        coords[i, 3] = bunch.yp(i)
-        coords[i, 4] = bunch.z(i)
-        coords[i, 5] = bunch.dE(i)
-
-    if axis is not None:
-        coords = coords[:, axis]
-        
-    return coords
-
-
-def set_coords(bunch: Bunch, coords: np.ndarray, verbose: bool = True) -> Bunch:
-    """Assign phase space coordinate array to bunch. Old particles are deleted.
-
-    bunch : Bunch
-        The bunch is resized if space needs to be made for the new particles.
-    coords : ndarray, shape (k, 6)
-        The phase space coordinates to add (columns: x, xp, y, yp, z, dE).
-    verbose: bool
-        Whether to use progress bar.
-
-    Returns
-    -------
-    bunch : Bunch
-        The modified bunch.
-    """
-    _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
-    _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
-    _mpi_size = orbit_mpi.MPI_Comm_size(_mpi_comm)
-    _mpi_dtype = orbit_mpi.mpi_datatype.MPI_DOUBLE
-    _main_rank = 0
-
-    bunch.deleteAllParticles()
-
-    _range = range(coords.shape[0])
-    if verbose:
-        _range = tqdm(_range)
-
-    for i in _range:
-        (x, xp, y, yp, z, dE) = coords[i, :]
-        (x, xp, y, yp, z, dE) = orbit_mpi.MPI_Bcast(
-            (x, xp, y, yp, z, dE),
-            _mpi_dtype,
-            _main_rank,
-            _mpi_comm,
-        )
-        if i % _mpi_size == _mpi_rank:
-            bunch.addParticle(x, xp, y, yp, z, dE)
-    return bunch
-
-
-def decorrelate_x_y_z(bunch: Bunch, verbose: bool = False) -> Bunch:
+def decorrelate_bunch_x_y_z(bunch: Bunch, verbose: bool = False) -> Bunch:
     """Decorrelate x-y-z by randomly permuting particle indices.
     
     Does not work with MPI.
@@ -145,7 +211,7 @@ def decorrelate_x_y_z(bunch: Bunch, verbose: bool = False) -> Bunch:
     return bunch
 
 
-def decorrelate_xy_z(bunch: Bunch, verbose: bool = False) -> Bunch:
+def decorrelate_bunch_xy_z(bunch: Bunch, verbose: bool = False) -> Bunch:
     """Decorrelate xy-z by randomly permuting particle indices.
     
     Does not work with MPI.
@@ -174,7 +240,7 @@ def decorrelate_xy_z(bunch: Bunch, verbose: bool = False) -> Bunch:
     return bunch
 
 
-def downsample(
+def downsample_bunch(
     bunch: Bunch,
     new_size: int,
     method: str = "first",
@@ -230,109 +296,7 @@ def downsample(
     return bunch
 
 
-def reverse(bunch: Bunch) -> Bunch:
-    """Reverse the bunch propagation direction.
-
-    Since the tail becomes the head of the bunch, the sign of z
-    changes but the sign of dE does not change.
-    """
-    for i in range(bunch.getSize()):
-        bunch.xp(i, -bunch.xp(i))
-        bunch.yp(i, -bunch.yp(i))
-        bunch.z(i, -bunch.z(i))
-    return bunch
-
-
-def transform(bunch: Bunch, transform: Callable, axis: tuple[int] = None) -> Bunch:
-    if axis is None:
-        axis = list(range(6))
-    axis = list(axis)
-    
-    for i in range(bunch.getSize()):
-        (x, xp) = (bunch.x(i), bunch.xp(i))
-        (y, yp) = (bunch.y(i), bunch.yp(i))
-        (z, de) = (bunch.z(i), bunch.dE(i))
-        
-        vector = np.array([x, xp, y, yp, z, de])
-        vector[axis] = transform(vector[axis])
-        
-        (x, xp, y, yp, z, de) = vector
-        bunch.x(i, x)
-        bunch.y(i, y)
-        bunch.z(i, z)
-        bunch.xp(i, xp)
-        bunch.yp(i, yp)
-        bunch.dE(i, de)
-    return bunch
-
-
-def linear_transform(bunch: Bunch, matrix: np.ndarray, axis: tuple[int] = None) -> Bunch:
-    assert matrix.shape[0] == matrix.shape[1]
-    if axis is None:
-        axis = list(range(matrix.shape[0]))
-    return transform(bunch, lambda x: np.matmul(matrix, x), axis=axis)
-
-
-def get_centroid(bunch: Bunch) -> np.array:
-    twiss_analysis = BunchTwissAnalysis()
-    twiss_analysis.analyzeBunch(bunch)
-    return np.array([twiss_analysis.getAverage(i) for i in range(6)])
-
-
-def shift_centroid(bunch: Bunch, delta: np.ndarray, verbose: bool = False) -> Bunch:
-    _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
-    _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
-
-    if _mpi_rank == 0 and verbose:
-        print("Shifting bunch centroid...")
-        print(f" delta x = {delta[0]:.3e} [m]")
-        print(f" delta y = {delta[2]:.3e} [m]")
-        print(f" delta z = {delta[2]:.3e} [m]")
-        print(f" delta xp = {delta[1]:.3e} [mrad]")
-        print(f" delta yp = {delta[3]:.3e} [mrad]")
-        print(f" delta dE = {delta[5]:.3e} [GeV]")
-    for i in range(bunch.getSize()):
-        bunch.x(i, bunch.x(i) + delta[0])
-        bunch.y(i, bunch.y(i) + delta[2])
-        bunch.z(i, bunch.z(i) + delta[4])
-        bunch.xp(i, bunch.xp(i) + delta[1])
-        bunch.yp(i, bunch.yp(i) + delta[3])
-        bunch.dE(i, bunch.dE(i) + delta[5])
-    if verbose:
-        centroid = get_centroid(bunch)
-        print("New centroid:")
-        print("<x>  = {} [m]".format(centroid[0]))
-        print("<y>  = {} [m]".format(centroid[2]))
-        print("<z>  = {} [m]".format(centroid[4]))
-        print("<xp> = {} [rad]".format(centroid[1]))
-        print("<yp> = {} [rad]".format(centroid[3]))
-        print("<de> = {} [GeV]".format(centroid[5]))
-    return bunch
-
-
-def set_centroid(bunch, centroid: np.ndarray = 0.0, verbose: bool = False) -> Bunch:
-    if centroid is None:
-        return bunch
-
-    if np.ndim(centroid) == 0:
-        centroid = 6 * [centroid]
-
-    if all([x is None for x in centroid]):
-        return bunch
-
-    old_centroid = get_centroid(bunch)
-    for i in range(6):
-        if centroid[i] is None:
-            centroid[i] = old_centroid[i]
-    delta = np.subtract(centroid, old_centroid)
-    return shift_centroid(bunch, delta=delta, verbose=verbose)
-
-
-def get_mean(bunch: Bunch) -> np.array:
-    return centroid(bunch)
-
-
-def get_mean_and_covariance(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False):
+def get_bunch_cov(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False) -> np.ndarray:
     order = 2
     bunch_twiss_analysis = BunchTwissAnalysis()
     bunch_twiss_analysis.computeBunchMoments(
@@ -342,115 +306,21 @@ def get_mean_and_covariance(bunch: Bunch, dispersion_flag: bool = False, emit_no
         int(emit_norm_flag)
     )
 
-    mean = np.zeros(6)
-    for i in range(6):
-        mean[i] = bunch_twiss_analysis.getAverage(i)
-
-    cov = np.zeros((6, 6))
+    S = np.zeros((6, 6))
     for i in range(6):
         for j in range(i + 1):
-            value = bunch_twiss_analysis.getCorrelation(j, i)
-            cov[i, j] = cov[j, i] = value
-
-    return mean, cov
-
-
-def get_covariance(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False):
-    mean, cov = get_mean_and_covariance(bunch, dispersion_flag, emit_norm_flag)
-    return cov
+            S[i, j] = bunch_twiss_analysis.getCorrelation(j, i)
+            S[j, i] = S[i, j]
+    return S
 
 
-def load(
-    filename: str = None,
-    format: str = "pyorbit",
-    bunch: Bunch = None,
-    verbose: bool = True,
-):
-    """
-    Parameters
-    ----------
-    filename : str
-        Path the file.
-    format : str
-        "pyorbit":
-            The expected header format is:
-        "parmteq":
-            The expected header format is:
-                Number of particles    =
-                Beam current           =
-                RF Frequency           =
-                The input file particle coordinates were written in double precision.
-                x(cm)             xpr(=dx/ds)       y(cm)             ypr(=dy/ds)       phi(radian)        W(MeV)
-    bunch : Bunch
-        Create a new bunch if None, otherwise modify this bunch.
-
-    Returns
-    -------
-    Bunch
-    """
-    _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
-    _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
-    _mpi_size = orbit_mpi.MPI_Comm_size(_mpi_comm)
-
-    if verbose:
-        print("(rank {}) loading bunch from file {}".format(_mpi_rank, filename))
-
-    if bunch is None:
-        bunch = Bunch()
-
-    if filename is None:
-        print("No filename provided")
-        return bunch
-
-    if not os.path.isfile(filename):
-        raise ValueError("File '{}' does not exist.".format(filename))
-
-    if format == "pyorbit":
-        bunch.readBunch(filename)
-        return bunch
-    elif format == "parmteq":
-        # Read data.
-        header = np.genfromtxt(filename, max_rows=3, usecols=[0, 1, 2, 3, 4], dtype=str)
-        size = int(header[0, 4])
-        current = np.float(header[1, 3])
-        frequency = np.float(header[2, 3]) * 1e6  # MHz to Hz
-        coords = np.loadtxt(filename, skiprows=5)
-
-        # Unit conversion.
-        coords[:, 0] *= 0.01  # [cm] -> [m]
-        coords[:, 2] *= 0.01  # [cm] -> [m]
-        coords[:, 4] = np.rad2deg(coords[:, 4]) / get_z_to_phase_coeff(bunch, frequency)  # [rad] -> [m]
-        coords[:, 5] *= 0.001  # [MeV} -> [GeV]
-
-        # Subtract synchronous particle energy.
-        kin_energy = np.mean(coords[:, 5])
-        coords[:, 5] -= kin_energy
-
-        # Set coordinates.
-        bunch.getSyncParticle().kinEnergy(kin_energy)
-        set_coords(bunch, coords)
-        set_current(bunch, current, frequency)
-    else:
-        raise KeyError(f"Unrecognized format '{format}'")
-
-    if verbose:
-        print(
-            "(rank {}) bunch loaded (size={}, macrosize={})".format(
-                _mpi_rank,
-                bunch.getSize(),
-                bunch.macroSize()
-            )
-        )
-    return bunch
-
-
-def generate(sample: Callable, size: int, bunch: Bunch = None, verbose: bool = True):
-    """Generate bunch from distribution generator.
+def generate_bunch(sample: Callable, size: int, bunch: Bunch = None, verbose: bool = True) -> Bunch:
+    """Generate bunch from particle sampler..
 
     Parameters
     ----------
     sample : callable
-        Samples (x, xp, y, yp, z, dE) from the distribution.
+        Samples (x, xp, y, yp, z, dE) from the distribution: `(x, xp, y, yp, z, dE) = sample()`.
     size : int
         The number of particles to generate.
     bunch : Bunch
@@ -490,7 +360,7 @@ def generate(sample: Callable, size: int, bunch: Bunch = None, verbose: bool = T
     return bunch
 
 
-def get_twiss_containers(bunch: Bunch) -> List[orbit.bunch_generators.TwissContainer]:
+def get_bunch_twiss_containers(bunch: Bunch) -> list[TwissContainer]:
     """Compute covariance matrix and return x/y/z TwissContainers from bunch.
 
     We return [twiss_x, twiss_y, twiss_z], where each entry is a TwissContainer
@@ -517,18 +387,18 @@ def get_twiss_containers(bunch: Bunch) -> List[orbit.bunch_generators.TwissConta
     alpha_x = twiss_analysis.getEffectiveAlpha(0)
     alpha_y = twiss_analysis.getEffectiveAlpha(1)
     alpha_z = twiss_analysis.getEffectiveAlpha(2)
-    twiss_x = orbit.bunch_generators.TwissContainer(alpha_x, beta_x, eps_x)
-    twiss_y = orbit.bunch_generators.TwissContainer(alpha_y, beta_y, eps_y)
-    twiss_z = orbit.bunch_generators.TwissContainer(alpha_z, beta_z, eps_z)
+    twiss_x = TwissContainer(alpha_x, beta_x, eps_x)
+    twiss_y = TwissContainer(alpha_y, beta_y, eps_y)
+    twiss_z = TwissContainer(alpha_z, beta_z, eps_z)
     return [twiss_x, twiss_y, twiss_z]
 
 
 class WrappedBunch:
     def __init__(
-            self,
-            bunch: Bunch,
-            current: float = None,
-            frequency: float = None,
+        self,
+        bunch: Bunch,
+        current: float = None,
+        frequency: float = None,
     ) -> None:
         self.bunch = bunch
         self.current = current

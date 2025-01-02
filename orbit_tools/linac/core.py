@@ -7,9 +7,6 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
-import orbit.core
-import orbit.py_linac
-import orbit.teapot
 from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
@@ -35,11 +32,11 @@ from orbit.py_linac.lattice import OverlappingQuadsNode
 from orbit.py_linac.lattice import Quad
 
 import orbit_tools.bunch
-from orbit_tools.bunch import get_z_to_phase_coeff
+from orbit_tools.bunch import get_z_to_phase_coefficient
 from orbit_tools.misc import get_lorentz_factors
-from orbit_tools.stats import apparent_emittances
-from orbit_tools.stats import intrinsic_emittances
-from orbit_tools.stats import twiss_2d
+from orbit_tools.cov import projected_emittances
+from orbit_tools.cov import intrinsic_emittances
+from orbit_tools.cov import twiss_2d
 from orbit_tools.utils import orbit_matrix_to_numpy
 
 
@@ -267,129 +264,6 @@ def check_sync_time(
         bunch.getSyncParticle().time(sync_time_design)
         if _mpi_rank == 0 and verbose:
             print("bunch.getSyncParticle().time() = {}".format(bunch.getSyncParticle().time()))
-
-
-def track(
-    bunch: Bunch,
-    lattice: AccLattice,
-    monitor: Callable = None,
-    start: Union[str, float] = 0.0,
-    stop: Union[str, float] = None,
-    verbose: bool = True,
-) -> dict:
-    """Track bunch from start to stop node/position.
-
-    monitor: callable
-        Call signature: `monitor(params_dict: dict, force_update: bool)`.
-    """
-    _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
-    _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
-
-    # Get start/stop node names, indices, and positions.
-    nodes = lattice.getNodes()
-    if stop is None:
-        stop = nodes[-1].getName()
-    start_node_info = get_node_info_from_name_or_position(start, lattice)
-    stop_node_info = get_node_info_from_name_or_position(stop, lattice)
-
-    # Add actions.
-    action_container = AccActionsContainer("monitor")
-    if monitor is not None:
-        monitor.position_offset = start_node_info["start_position"]
-        action_container.addAction(monitor, AccActionsContainer.ENTRANCE)
-        action_container.addAction(monitor, AccActionsContainer.EXIT)
-
-    # Create params dict and lost bunch.
-    params_dict = dict()
-    params_dict["lostbunch"] = Bunch()
-
-    if _mpi_rank == 0 and verbose:
-        print(
-            "Tracking from {} (s={:0.5f}) to {} (s={:0.5f}).".format(
-                start_node_info["name"],
-                start_node_info["start_position"],
-                stop_node_info["name"],
-                stop_node_info["stop_position"],
-            )
-        )
-
-    time_start = time.time()
-    lattice.trackBunch(
-        bunch,
-        paramsDict=params_dict,
-        actionContainer=action_container,
-        index_start=start_node_info["index"],
-        index_stop=stop_node_info["index"],
-    )
-    monitor(params_dict, force_update=True)
-
-    if verbose and _mpi_rank == 0:
-        print("time = {:.3f} [sec]".format(time.time() - time_start))
-
-    return params_dict
-
-
-def track_reverse(
-    bunch: Bunch,
-    lattice: AccLattice,
-    monitor: Callable = None,
-    start: Union[str, float] = None,
-    stop: Union[str, float] = 0.0,
-    verbose: bool = True,
-) -> dict:
-    """Track bunch backward from stop to start node/position.
-
-    See `track` method arguments.
-    """
-    lattice.reverseOrder()
-    bunch = orbit_tools.bunch.reverse(bunch)
-    params_dict = track(bunch, lattice, monitor=monitor, start=stop, stop=start, verbose=verbose)
-    lattice.reverseOrder()
-    bunch = orbit_tools.bunch.reverse(bunch)
-    return params_dict
-
-
-def track_rms(
-    lattice: AccLattice,
-    bunch: Bunch,
-    start_index: int = 0,
-    stop_index: int = -1,
-    copy_bunch: bool = False,
-    verbose: bool = False,
-) -> pd.DataFrame:
-    """Track and return DataFrame containing position, node name, and rms size."""
-    monitor = BunchMonitorRMS(verbose=verbose)
-    action_container = AccActionsContainer()
-    action_container.addAction(monitor.action, AccActionsContainer.ENTRANCE)
-    action_container.addAction(monitor.action, AccActionsContainer.EXIT)
-
-    if copy_bunch:
-        bunch_out = Bunch()
-        bunch.copyBunchTo(bunch_out)
-    else:
-        bunch_out = bunch
-
-    monitor.reset()
-    lattice.trackBunch(
-        bunch_out,
-        actionContainer=action_container,
-        index_start=start_index,
-        index_stop=stop_index,
-    )
-    history = pd.DataFrame().from_dict(monitor.history)
-    return history
-
-
-def backtrack(lattice: AccLattice, bunch: Bunch, index_start: int, index_stop: int) -> Bunch:
-    index_start = len(lattice.getNodes()) - 1 - index_start
-    index_stop  = len(lattice.getNodes()) - 1 - index_stop
-    
-    lattice.reverseOrder()
-    bunch = orbit_tools.bunch.reverse(bunch)
-    lattice.trackBunch(bunch, index_start=index_start, index_stop=index_stop)
-    bunch = orbit_tools.bunch.reverse(bunch)
-    lattice.reverseOrder()
-    return bunch
 
 
 def estimate_transfer_matrix(
@@ -710,7 +584,7 @@ class BunchMonitor:
 
         if _mpi_rank == 0:
             (x_rms, xp_rms, y_rms, yp_rms, z_rms, de_rms) = np.sqrt(np.diag(cov))
-            z_to_phase_coeff = get_z_to_phase_coeff(bunch, self.rf_frequency)
+            z_to_phase_coeff = get_z_to_phase_coefficient(bunch, self.rf_frequency)
             z_rms_deg = -z_to_phase_coeff * z_rms
 
             self.history["x_rms"] = x_rms
@@ -724,7 +598,7 @@ class BunchMonitor:
 
         # Compute rms emittances for convenience.
         if _mpi_rank == 0:
-            (eps_x, eps_y, eps_z) = apparent_emittances(cov[:6, :6])
+            (eps_x, eps_y, eps_z) = projected_emittances(cov[:6, :6])
             (eps_1, eps_2) = intrinsic_emittances(cov[:4, :4])
             eps_xy = np.sqrt(np.linalg.det(cov[:4, :4]))
             eps_xz = np.sqrt(np.linalg.det(cov[np.ix_([0, 1, 4, 5], [0, 1, 4, 5])]))
