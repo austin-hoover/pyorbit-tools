@@ -3,6 +3,7 @@ import sys
 import time
 
 import numpy as np
+from tqdm import tqdm
 
 import orbit.lattice
 from orbit.core import orbit_mpi
@@ -151,3 +152,30 @@ def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLa
     bunch = transform_bunch_linear(bunch, T, axis=(0, 1, 2, 3))
     return bunch
 
+
+class Tracker:
+    def __init__(
+        self,
+        lattice: AccLattice,
+        bunch: Bunch,
+        params_dict: dict,
+        diagnostics: list[Diagnostic],
+        progbar: bool = True,
+    ) -> None:
+        self.lattice = lattice
+        self.bunch = bunch
+        self.params_dict = params_dict
+        self.diagnostics = diagnostics
+        self.progbar = progbar
+
+    def get_turns_list(self, nturns: int) -> Iterable:
+        turns = range(1, nturns + 1)
+        if self.progbar:
+            turns = tqdm(turns)
+        return turns
+
+    def track(self, nturns: int) -> None:
+        for turn in self.get_turns_list(nturns):
+            self.lattice.trackBunch(self.bunch, self.params_dict)
+            for diagnostic in self.diagnostics:
+                diagnostic(self.params_dict)
