@@ -34,7 +34,13 @@ def get_twiss(lattice: AccLattice) -> dict:
     data["beta_x"] = np.array(pos_beta_x)[:, 1]
     data["beta_y"] = np.array(pos_beta_y)[:, 1]
     return data
-    
+
+
+def get_eigtunes(lattice: AccLattice, mass: float, kin_energy: float) -> tuple[float, float]:
+    M = get_matrix_lattice(lattice, mass, kin_energy)
+    eigtunes = np.arccos(np.real(np.linalg.eigvals(M)))
+    return (eigtunes[0], eigtunes[2])
+
 
 def get_dispersion(matrix_lattice):
     (pos_disp_x, pos_disp_p_x) = matrix_lattice.getRingDispersionDataX()
