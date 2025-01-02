@@ -12,6 +12,7 @@ from orbit.core.bunch import BunchTwissAnalysis
 from orbit.lattice import AccLattice
 from orbit.core.orbit_utils import BunchExtremaCalculator
 
+from . import RingDiagnostic
 from ..bunch import get_bunch_cov
 from ..bunch import transform_bunch_linear
 from ..lattice import get_matrix_lattice
@@ -159,7 +160,7 @@ class Tracker:
         lattice: AccLattice,
         bunch: Bunch,
         params_dict: dict,
-        diagnostics: list[Diagnostic],
+        diagnostics: list[RingDiagnostic],
         progbar: bool = True,
     ) -> None:
         self.lattice = lattice
