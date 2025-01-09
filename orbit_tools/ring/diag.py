@@ -6,10 +6,14 @@ import numpy as np
 
 from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
+from orbit.core.bunch import BunchTwissAnalysis
+from orbit.core.orbit_utils import BunchExtremaCalculator
 from orbit.lattice import AccLattice
 from orbit.lattice import AccNode
 
 from ..diag import Diagnostic
+from ..cov import projected_emittances
+from ..cov import intrinsic_emittances
 
 
 class RingDiagnostic(Diagnostic):

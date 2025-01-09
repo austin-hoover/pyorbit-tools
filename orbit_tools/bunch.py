@@ -298,8 +298,8 @@ def downsample_bunch(
 
 def get_bunch_cov(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False) -> np.ndarray:
     order = 2
-    bunch_twiss_analysis = BunchTwissAnalysis()
-    bunch_twiss_analysis.computeBunchMoments(
+    twiss_calc = BunchTwissAnalysis()
+    twiss_calc.computeBunchMoments(
         bunch,
         order,
         int(dispersion_flag),
@@ -309,7 +309,7 @@ def get_bunch_cov(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: b
     S = np.zeros((6, 6))
     for i in range(6):
         for j in range(i + 1):
-            S[i, j] = bunch_twiss_analysis.getCorrelation(j, i)
+            S[i, j] = twiss_calc.getCorrelation(j, i)
             S[j, i] = S[i, j]
     return S
 

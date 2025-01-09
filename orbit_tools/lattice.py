@@ -14,12 +14,22 @@ from orbit.lattice import AccLattice
 from orbit.matrix_lattice import MATRIX_Lattice
 from orbit.teapot import TEAPOT_MATRIX_Lattice
 
+from .utils import orbit_matrix_to_numpy
+
 
 def get_matrix_lattice(lattice: AccLattice, mass: float, kin_energy: float) -> MATRIX_Lattice:
     bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
     return TEAPOT_MATRIX_Lattice(lattice, bunch)
+
+
+def get_transfer_matrix(lattice: AccLattice, mass: float, kin_energy: float, ndim: int = 6) -> np.ndarray:
+    matrix_lattice = get_matrix_lattice(lattice, mass, kin_energy)
+    M = matrix_lattice.oneTurnMatrix
+    M = orbit_matrix_to_numpy(M)
+    M = M[:ndim, :ndim]
+    return M
 
 
 def get_twiss(lattice: AccLattice) -> dict:
@@ -37,7 +47,7 @@ def get_twiss(lattice: AccLattice) -> dict:
 
 
 def get_eigtunes(lattice: AccLattice, mass: float, kin_energy: float) -> tuple[float, float]:
-    M = get_matrix_lattice(lattice, mass, kin_energy)
+    M = get_transfer_matrix(lattice, mass, kin_energy)
     eigtunes = np.arccos(np.real(np.linalg.eigvals(M)))
     return (eigtunes[0], eigtunes[2])
 

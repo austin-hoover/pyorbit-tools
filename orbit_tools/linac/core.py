@@ -11,7 +11,6 @@ from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
 from orbit.core.orbit_utils import BunchExtremaCalculator
-
 # from orbit.core.orbit_utils.bunch_utils_functions import copyCoordsToInitCoordsAttr
 from orbit.bunch_utils import ParticleIdNumber
 from orbit.lattice import AccActionsContainer

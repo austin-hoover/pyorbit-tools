@@ -1,6 +1,9 @@
 import os
 import sys
 import time
+from typing import Callable
+from typing import Iterable
+from typing import Optional
 
 import numpy as np
 from tqdm import tqdm
@@ -10,6 +13,7 @@ from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
 from orbit.lattice import AccLattice
+from orbit.lattice import AccActionsContainer
 from orbit.core.orbit_utils import BunchExtremaCalculator
 
 from .diag import RingDiagnostic
@@ -162,12 +166,14 @@ class Tracker:
         params_dict: dict,
         diagnostics: list[RingDiagnostic],
         progbar: bool = True,
+        verbose: bool = 1,
     ) -> None:
         self.lattice = lattice
         self.bunch = bunch
         self.params_dict = params_dict
         self.diagnostics = diagnostics
         self.progbar = progbar
+        self.verbose = verbose
 
     def get_turns_list(self, nturns: int) -> Iterable:
         turns = range(1, nturns + 1)
@@ -176,7 +182,18 @@ class Tracker:
         return turns
 
     def track(self, nturns: int) -> None:
+
+        action_container = None
+
+        if self.verbose > 1:
+            def action(params_dict):
+                node = params_dict["node"]
+                print(node.getName())
+
+            action_container = AccActionsContainer("monitor")
+            action_container.addAction(action, AccActionsContainer.EXIT)
+
         for turn in self.get_turns_list(nturns):
-            self.lattice.trackBunch(self.bunch, self.params_dict)
+            self.lattice.trackBunch(self.bunch, self.params_dict, actionContainer=action_container)
             for diagnostic in self.diagnostics:
                 diagnostic(self.params_dict)
