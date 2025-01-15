@@ -35,7 +35,7 @@ def get_intensity_from_perveance(
 ):
     gamma, beta = get_lorentz_factors(mass, kin_energy)
     classical_proton_radius = CLASSICAL_PROTON_RADIUS
-    intensity = (beta**2 * gamma**3 * perveance * bunch_length) / (
+    intensity = (beta**2 * gamma**3 * perveance * length) / (
         2.0 * classical_proton_radius
     )
     return intensity
