@@ -14,7 +14,7 @@ from orbit.core.bunch import BunchTwissAnalysis
 from orbit.bunch_generators import TwissContainer
 from orbit.utils.consts import speed_of_light
 
-from .cov import norm_matrix
+from .cov import normalization_matrix
 
 
 def get_part_coords(bunch: Bunch, index: int) -> list[float]:
@@ -129,11 +129,11 @@ def set_bunch_cov(bunch: Bunch, covariance_matrix: np.ndarray, block_diag: bool 
     S_old = np.cov(X_old.T)
 
     # Assume block-diagonal covariance matrix
-    V_old_inv = norm_matrix(S_old, scale=True, block_diag=block_diag)
+    V_old_inv = normalization_matrix(S_old, scale=True, block_diag=block_diag)
     V_old = np.linalg.inv(V_old_inv)
 
     S_new = np.copy(covariance_matrix)
-    V_new_inv = norm_matrix(S_new, scale=True, block_diag=block_diag)
+    V_new_inv = normalization_matrix(S_new, scale=True, block_diag=block_diag)
     V_new = np.linalg.inv(V_new_inv)
 
     M = np.matmul(V_new, V_old_inv)
