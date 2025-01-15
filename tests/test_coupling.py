@@ -57,43 +57,12 @@ def make_lattice() -> AccLattice:
     return lattice
 
 
-def test_get_transfer_matrix():
-    lattice = make_lattice()
-    M = ot.ring.get_transfer_matrix(lattice, mass=0.938, kin_energy=1.000)
-    assert M.shape == (6, 6)
-
-
-def test_track_twiss():
-    lattice = make_lattice()
-    ot.ring.track_twiss(lattice, mass=0.938, kin_energy=1.000)
-
-
-def test_track_dispersion():
-    lattice = make_lattice()
-    ot.ring.track_dispersion(lattice, mass=0.938, kin_energy=1.000)
-
-
-def test_match_bunch():
+def test_eigtunes():
     lattice = make_lattice()
     bunch = make_bunch()
-    bunch = ot.ring.match_bunch(bunch=bunch, lattice=lattice)
+    transfer_matrix = ot.ring.get_transfer_matrix(
+        lattice, mass=bunch.mass(), kin_energy=bunch.getSyncParticle().kinEnergy()
+    )
+    eigtunes = ot.coupling.eigentunes(transfer_matrix)
 
-
-def test_ring_diag_writer():
-    lattice = make_lattice()
-    bunch = make_bunch()
-    params_dict = {"bunch": bunch}
-
-    diag = ot.ring.BunchWriter(verbose=1, freq=1)
-    diag(params_dict)
-
-
-def test_ring_diag_monitor():
-    lattice = make_lattice()
-    bunch = make_bunch()
-    params_dict = {"bunch": bunch}
-
-    diag = ot.ring.BunchMonitor(verbose=1, freq=1)
-    diag(params_dict)
-
-
+test_eigtunes()
