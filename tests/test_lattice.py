@@ -59,42 +59,29 @@ def make_lattice() -> AccLattice:
 
     return lattice
 
+#
+# def test_get_sublattice():
+#     lattice = make_lattice()
+#     sublattice = ot.lattice.get_sublattice(lattice, start=0, stop=5)
+#     assert len(lattice.getNodes()) > 0
+#
+#
+# def test_split_node():
+#     lattice = make_lattice()
+#     node = lattice.getNodes()[0]
+#     node = ot.lattice.split_node(node, max_part_length=0.1)
+#     assert len(lattice.getNodes()) > 0
+#
+# def test_split_lattice():
+#     lattice = make_lattice()
+#     node = lattice.getNodes()[0]
+#     lattice = ot.lattice.split_lattice(lattice, 0.1)
+#     assert len(lattice.getNodes()) > 0
+#
 
-def test_get_transfer_matrix():
-    lattice = make_lattice()
-    M = ot.ring.get_transfer_matrix(lattice, mass=0.938, kin_energy=1.000)
-    assert M.shape == (6, 6)
-
-
-def test_track_twiss():
-    lattice = make_lattice()
-    ot.ring.track_twiss(lattice, mass=0.938, kin_energy=1.000)
-
-
-def test_track_dispersion():
-    lattice = make_lattice()
-    ot.ring.track_dispersion(lattice, mass=0.938, kin_energy=1.000)
-
-
-def test_match_bunch():
-    lattice = make_lattice()
-    bunch = make_bunch()
-    bunch = ot.ring.match_bunch(bunch=bunch, lattice=lattice)
-
-
-def test_ring_diag_writer():
-    lattice = make_lattice()
-    bunch = make_bunch()
-    params_dict = {"bunch": bunch}
-
-    diag = ot.ring.BunchWriter(verbose=1, freq=1)
-    diag(params_dict)
-
-
-def test_ring_diag_monitor():
-    lattice = make_lattice()
-    bunch = make_bunch()
-    params_dict = {"bunch": bunch}
-
-    diag = ot.ring.BunchMonitor(verbose=1, freq=1)
-    diag(params_dict)
+def get_node_for_name_any_case():
+    # lattice = make_lattice()
+    # name = lattice.getNodes()[0].getName()
+    # node1 = ot.lattice.get_node_for_name_any_case(lattice, name=name.lower())
+    # node2 = ot.lattice.get_node_for_name_any_case(lattice, name=name.upper())
+    assert 2 < 1

@@ -13,6 +13,7 @@ from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
 from orbit.core.orbit_utils import BunchExtremaCalculator
 from orbit.lattice import AccLattice
+from orbit.lattice import AccNode
 from orbit.lattice import AccActionsContainer
 from orbit.matrix_lattice import MATRIX_Lattice
 from orbit.teapot import TEAPOT_MATRIX_Lattice
@@ -23,8 +24,56 @@ from ..bunch import transform_bunch_linear
 from ..cov import normalization_matrix
 from ..cov import normalization_matrix_from_eigvecs
 from ..cov import normalize_eigvecs
-from ..lattice import get_matrix_lattice
 from ..utils import orbit_matrix_to_numpy
+
+
+def read_mad_file(
+    lattice: AccLattice, path: str, sequence: str, kind: str = "auto"
+) -> AccLattice:
+    if not os.path.exists(path):
+        raise FileNotFoundError
+
+    if kind == "auto":
+        # MADX output is lowercase; MAD is upercase.
+        kind = "madx"
+        file = open(path, "r")
+        for line in file:
+            if line.isupper():
+                kind = "mad"
+                break
+        file.close()
+
+    if kind == "madx":
+        lattice.readMADX(path, sequence)
+    elif kind == "mad":
+        lattice.readMAD(path, sequence)
+    else:
+        raise ValueError(f"Invalid kind {kind}")
+
+    return lattice
+
+
+def set_node_fringe(node: AccNode, setting: bool = False) -> AccNode:
+    if hasattr(node, "setFringeFieldFunctionIN"):
+        node.setUsageFringeFieldIN(setting)
+    if hasattr(node, "setFringeFieldFunctionOUT"):
+        node.setUsageFringeFieldIN(setting)
+    return node
+
+
+def set_lattice_fringe(lattice: AccLattice, setting: bool) -> AccLattice:
+    for node in lattice.getNodes():
+        set_node_fringe(node, setting)
+    return lattice
+
+
+def get_matrix_lattice(
+    lattice: AccLattice, mass: float, kin_energy: float
+) -> MATRIX_Lattice:
+    bunch = Bunch()
+    bunch.mass(mass)
+    bunch.getSyncParticle().kinEnergy(kin_energy)
+    return TEAPOT_MATRIX_Lattice(lattice, bunch)
 
 
 def get_transfer_matrix(

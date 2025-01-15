@@ -13,6 +13,7 @@ from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
 from orbit.bunch_generators import TwissContainer
 from orbit.utils.consts import speed_of_light
+from orbit.utils.consts import charge_electron
 
 from .cov import normalization_matrix
 
@@ -173,7 +174,7 @@ def get_z_to_phase_coefficient(bunch: Bunch, frequency: float) -> float:
 
 def current_to_intensity(current: float, frequency: float, charge: float) -> float:
     """Return the bunch intensity from beam current [A] and bunch frequency [Hz]."""
-    return (current / frequency) / (abs(charge) * orbit.utils.consts.charge_electron)
+    return (current / frequency) / (abs(charge) * charge_electron)
 
 
 def set_bunch_current(bunch: Bunch, current: float, frequency: float) -> Bunch:

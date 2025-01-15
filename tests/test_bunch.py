@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from orbit.core.bunch import Bunch
 from orbit.lattice import AccLattice
