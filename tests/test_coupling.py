@@ -65,4 +65,13 @@ def test_eigtunes():
     )
     eigtunes = ot.coupling.eigentunes(transfer_matrix)
 
-test_eigtunes()
+
+
+def test_eigtunes_from_eigvals():
+    lattice = make_lattice()
+    bunch = make_bunch()
+    transfer_matrix = ot.ring.get_transfer_matrix(
+        lattice, mass=bunch.mass(), kin_energy=bunch.getSyncParticle().kinEnergy()
+    )
+    eigvals, eigvecs = np.linalg.eig(transfer_matrix)
+    eigtunes = ot.coupling.eigtunes_from_eigvals(eigvals)
