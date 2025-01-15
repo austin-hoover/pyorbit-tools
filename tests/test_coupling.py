@@ -66,7 +66,6 @@ def test_eigtunes():
     eigtunes = ot.coupling.eigentunes(transfer_matrix)
 
 
-
 def test_eigtunes_from_eigvals():
     lattice = make_lattice()
     bunch = make_bunch()

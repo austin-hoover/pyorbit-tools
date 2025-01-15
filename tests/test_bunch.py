@@ -17,7 +17,7 @@ def make_gaussian_bunch(size: int = 128) -> Bunch:
 
 def test_set_bunch_current():
     bunch = make_gaussian_bunch()
-    ot.bunch.set_bunch_current(bunch, current=0.025, frequency=402.5e+06)
+    ot.bunch.set_bunch_current(bunch, current=0.025, frequency=402.5e06)
 
 
 def test_get_bunch_coords():
@@ -43,7 +43,7 @@ def test_decorrelate_bunch_x_y_z():
     indices = [(0, 2)]
 
     cov = np.eye(6)
-    for (i, j) in indices:
+    for i, j in indices:
         cov[i, j] = cov[j, i] = 0.5
 
     coords = np.random.multivariate_normal(mean=np.zeros(6), cov=cov, size=1000)
@@ -55,7 +55,7 @@ def test_decorrelate_bunch_x_y_z():
 
     coords_out = ot.bunch.get_bunch_coords(bunch)
     cov_out = np.cov(coords_out.T)
-    for (i, j) in indices:
+    for i, j in indices:
         assert np.abs(cov_out[i, j]) < np.abs(cov[i, j])
 
 
@@ -63,7 +63,7 @@ def test_decorrelate_bunch_xy_z():
     indices = [(0, 4), (1, 5)]
 
     cov = np.eye(6)
-    for (i, j) in indices:
+    for i, j in indices:
         cov[i, j] = cov[j, i] = 0.5
 
     coords = np.random.multivariate_normal(mean=np.zeros(6), cov=cov, size=1000)
@@ -75,7 +75,7 @@ def test_decorrelate_bunch_xy_z():
 
     coords_out = ot.bunch.get_bunch_coords(bunch)
     cov_out = np.cov(coords_out.T)
-    for (i, j) in indices:
+    for i, j in indices:
         assert np.abs(cov_out[i, j]) < np.abs(cov[i, j])
 
 

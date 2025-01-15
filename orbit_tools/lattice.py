@@ -17,14 +17,18 @@ from orbit.teapot import TEAPOT_MATRIX_Lattice
 from .utils import orbit_matrix_to_numpy
 
 
-def get_matrix_lattice(lattice: AccLattice, mass: float, kin_energy: float) -> MATRIX_Lattice:
+def get_matrix_lattice(
+    lattice: AccLattice, mass: float, kin_energy: float
+) -> MATRIX_Lattice:
     bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
     return TEAPOT_MATRIX_Lattice(lattice, bunch)
 
 
-def get_transfer_matrix(lattice: AccLattice, mass: float, kin_energy: float, ndim: int = 6) -> np.ndarray:
+def get_transfer_matrix(
+    lattice: AccLattice, mass: float, kin_energy: float, ndim: int = 6
+) -> np.ndarray:
     matrix_lattice = get_matrix_lattice(lattice, mass, kin_energy)
     M = matrix_lattice.oneTurnMatrix
     M = orbit_matrix_to_numpy(M)
@@ -46,7 +50,9 @@ def get_twiss(lattice: AccLattice) -> dict:
     return data
 
 
-def get_eigtunes(lattice: AccLattice, mass: float, kin_energy: float) -> tuple[float, float]:
+def get_eigtunes(
+    lattice: AccLattice, mass: float, kin_energy: float
+) -> tuple[float, float]:
     M = get_transfer_matrix(lattice, mass, kin_energy)
     eigtunes = np.arccos(np.real(np.linalg.eigvals(M)))
     return (eigtunes[0], eigtunes[2])
@@ -65,9 +71,9 @@ def get_dispersion(matrix_lattice):
 
 
 def get_sublattice(
-    lattice: AccLattice, 
-    start: Union[int, str] = None, 
-    stop: Union[int, str] = None, 
+    lattice: AccLattice,
+    start: Union[int, str] = None,
+    stop: Union[int, str] = None,
 ) -> AccLattice:
     def get_index(argument, default=0):
         index = default_index
@@ -110,9 +116,11 @@ def set_fringe(lattice: AccLattice, setting: bool) -> AccLattice:
     return lattice
 
 
-def read_mad_file(lattice: AccLattice, path: str, sequence: str, kind: str = "auto") -> AccLattice:
+def read_mad_file(
+    lattice: AccLattice, path: str, sequence: str, kind: str = "auto"
+) -> AccLattice:
     if not os.path.exists(path):
-        raise FileNotFoundError 
+        raise FileNotFoundError
 
     if kind == "auto":
         # MADX output is lowercase; MAD is upercase.
@@ -123,7 +131,7 @@ def read_mad_file(lattice: AccLattice, path: str, sequence: str, kind: str = "au
                 kind = "mad"
                 break
         file.close()
-            
+
     if kind == "madx":
         lattice.readMADX(path, sequence)
     elif kind == "mad":
@@ -142,13 +150,16 @@ def get_node_for_name_any_case(lattice: AccLattice, name: str) -> AccNode:
             name = name.lower()
         elif name.upper() in node_names:
             name = name.upper()
-        else:            
+        else:
             raise ValueError(f"node {name} not found")
     return lattice.getNodeForName(name)
 
 
 def get_node_name_and_index(
-    lattice: AccLattice, node: AccNode = None, name: str = None, index: int = None,
+    lattice: AccLattice,
+    node: AccNode = None,
+    name: str = None,
+    index: int = None,
 ) -> tuple[AccNode, str, int]:
     if node is None:
         if name is not None:
@@ -164,7 +175,7 @@ def get_node_name_and_index(
 
 def get_nodes_names_and_indices(
     lattice: AccLattice,
-    nodes: list[AccNode] = None, 
+    nodes: list[AccNode] = None,
     names: list[str] = None,
     indices: list[int] = None,
 ) -> tuple[list[AccNode], list[str], list[int]]:

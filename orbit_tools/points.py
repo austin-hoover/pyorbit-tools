@@ -56,8 +56,8 @@ def norm_2d(points: np.ndarray, scale_emittance: bool = False) -> np.ndarray:
 
 
 def slice_idx(
-    points: np.ndarray, 
-    axis: Tuple[int] = None, 
+    points: np.ndarray,
+    axis: Tuple[int] = None,
     center: np.ndarray = None,
     width: np.ndarray = None,
     limits: List[Tuple[float]] = None,
@@ -65,7 +65,7 @@ def slice_idx(
     if axis is None:
         axis = np.arange(points.shape[1])
     if limits is None:
-        limits = list(zip(center - 0.5 * width, center + 0.5 * width))  
+        limits = list(zip(center - 0.5 * width, center + 0.5 * width))
     limits = np.array(limits)
     if limits.ndim == 0:
         limits = limits[None, :]
@@ -74,11 +74,11 @@ def slice_idx(
         conditions.append(X[:, j] > xmin)
         conditions.append(X[:, j] < xmax)
     idx = np.logical_and.reduce(conditions)
-    
+
 
 def slice(
-    points: np.ndarray, 
-    axis: Tuple[int] = None, 
+    points: np.ndarray,
+    axis: Tuple[int] = None,
     center: np.ndarray = None,
     width: np.ndarray = None,
     limits: List[Tuple[float]] = None,
@@ -88,9 +88,9 @@ def slice(
 
 
 def slice_idx_sphere(
-    points: np.ndarray, 
-    axis: Tuple[int] = None, 
-    rmin: float = 0.0, 
+    points: np.ndarray,
+    axis: Tuple[int] = None,
+    rmin: float = 0.0,
     rmax: float = None,
 ) -> np.ndarray:
     if axis is None:
@@ -103,19 +103,16 @@ def slice_idx_sphere(
 
 
 def slice_sphere(
-    points: np.ndarray, 
-    axis: Tuple[int] = None, 
-    rmin: float = 0.0, 
-    rmax: float = None
+    points: np.ndarray, axis: Tuple[int] = None, rmin: float = 0.0, rmax: float = None
 ) -> np.ndarray:
     idx = slice_idx_sphere(points, axis, rmin=rmin, rmax=rmax)
     return points[idx, :]
 
 
 def slice_idx_ellipsoid(
-    points: np.ndarray, 
-    axis: Tuple[int] = None, 
-    rmin: float = 0.0, 
+    points: np.ndarray,
+    axis: Tuple[int] = None,
+    rmin: float = 0.0,
     rmax: float = None,
 ) -> np.ndarray:
     if axis is None:
@@ -128,21 +125,18 @@ def slice_idx_ellipsoid(
 
 
 def slice_ellipsoid(
-    points: np.ndarray, 
-    axis: Tuple[int] = None, 
-    rmin: float = 0.0, 
-    rmax: float = None
+    points: np.ndarray, axis: Tuple[int] = None, rmin: float = 0.0, rmax: float = None
 ) -> np.ndarray:
     idx = slice_idx_ellipsoid(points, axis, rmin=rmin, rmax=rmax)
     return points[idx, :]
-    
+
 
 def slice_idx_contour(
-    points: np.ndarray, 
-    axis: Tuple[int] = None, 
-    lmin: float = 0.0, 
-    lmax: float = 1.0, 
-    interp: bool = True, 
+    points: np.ndarray,
+    axis: Tuple[int] = None,
+    lmin: float = 0.0,
+    lmax: float = 1.0,
+    interp: bool = True,
     hist_kws: dict = None,
 ) -> np.ndarray:
     if axis is None:
@@ -152,11 +146,11 @@ def slice_idx_contour(
 
     if hist_kws is None:
         hist_kws = dict()
-        
+
     hist, edges = np.histogramdd(_points, **hist_kws)
     hist = hist / np.max(hist)
     centers = [0.5 * (e[:-1] + e[1:]) for e in edges]
-    
+
     if interp:
         interpolator = scipy.interpolate.RegularGridInterpolator(
             centers,
@@ -170,8 +164,7 @@ def slice_idx_contour(
         return ids
     else:
         valid_indices = np.stack(
-            np.where(np.logical_and(hist >= lmin, hist <= lmax)), 
-            axis=-1
+            np.where(np.logical_and(hist >= lmin, hist <= lmax)), axis=-1
         )
         indices = [np.digitize(_points[:, j], edges[j]) for j in range(len(axis))]
         indices = np.stack(indices, axis=-1)
@@ -180,4 +173,3 @@ def slice_idx_contour(
             if indices[i].tolist() in valid_indices.tolist():
                 idx.append(i)
         return idx
-

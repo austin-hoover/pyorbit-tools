@@ -27,23 +27,27 @@ from ..lattice import get_matrix_lattice
 from ..utils import orbit_matrix_to_numpy
 
 
-def get_transfer_matrix(lattice: AccLattice, mass: float, kin_energy: float, ndim: int = 6) -> np.ndarray:
+def get_transfer_matrix(
+    lattice: AccLattice, mass: float, kin_energy: float, ndim: int = 6
+) -> np.ndarray:
     matrix_lattice = get_matrix_lattice(lattice, mass, kin_energy)
     M = matrix_lattice.oneTurnMatrix
     M = orbit_matrix_to_numpy(M)
     M = M[:ndim, :ndim]
     return M
-    
 
-def track_twiss(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str, np.ndarray]:
+
+def track_twiss(
+    lattice: AccLattice, mass: float, kin_energy: float
+) -> dict[str, np.ndarray]:
     bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
-    
+
     matrix_lattice = TEAPOT_MATRIX_Lattice(lattice, bunch)
     (pos_nu_x, pos_alpha_x, pos_beta_x) = matrix_lattice.getRingTwissDataX()
     (pos_nu_y, pos_alpha_y, pos_beta_y) = matrix_lattice.getRingTwissDataY()
-    
+
     data = dict()
     data["pos"] = np.array(pos_nu_x)[:, 0]
     data["nu_x"] = np.array(pos_nu_x)[:, 1]
@@ -55,15 +59,17 @@ def track_twiss(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str
     return data
 
 
-def track_dispersion(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str, np.ndarray]:
+def track_dispersion(
+    lattice: AccLattice, mass: float, kin_energy: float
+) -> dict[str, np.ndarray]:
     bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
-    
+
     matrix_lattice = TEAPOT_MATRIX_Lattice(lattice, bunch)
     (pos_disp_x, pos_dispp_x) = matrix_lattice.getRingDispersionDataX()
     (pos_disp_y, pos_dispp_y) = matrix_lattice.getRingDispersionDataY()
-    
+
     data = dict()
     data["s"] = np.array(pos_disp_x)[:, 0]
     data["disp_x"] = np.array(pos_disp_x)[:, 1]
@@ -73,15 +79,17 @@ def track_dispersion(lattice: AccLattice, mass: float, kin_energy: float) -> dic
     return data
 
 
-def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLattice = None) -> Bunch:
+def match_bunch(
+    bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLattice = None
+) -> Bunch:
     """Match the bunch covariance matrix to the ringn transfer matrix.
-    
+
     X -> V inv(W) X, where V is the lattice normalization matrix and W is the bunch
     normalization matrix.
-    
+
     W transforms the bunch such that Sigma = diag(eps_1, eps_1, eps_2, eps_2), where
     eps_j is the intrinsic emittance of mode j.
-        
+
     Parameters
     ----------
     bunch: Bunch
@@ -103,7 +111,7 @@ def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLa
         M = get_transfer_matrix(
             lattice, mass=bunch.mass(), kin_energy=bunch.getSyncParticle().kinEnergy
         )
-    
+
     # Compute lattice normalization matrix V.
     M = np.copy(M)
     M = M[:4, :4]
@@ -154,6 +162,7 @@ class Tracker:
         action_container = None
 
         if self.verbose > 1:
+
             def action(params_dict):
                 node = params_dict["node"]
                 print(node.getName())
@@ -162,6 +171,8 @@ class Tracker:
             action_container.addAction(action, AccActionsContainer.EXIT)
 
         for turn in self.get_turns_list(nturns):
-            self.lattice.trackBunch(self.bunch, self.params_dict, actionContainer=action_container)
+            self.lattice.trackBunch(
+                self.bunch, self.params_dict, actionContainer=action_container
+            )
             for diagnostic in self.diagnostics:
                 diagnostic(self.params_dict)

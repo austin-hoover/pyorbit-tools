@@ -95,5 +95,3 @@ def test_ring_diag_monitor():
 
     diag = ot.ring.BunchMonitor(verbose=1, freq=1)
     diag(params_dict)
-
-
