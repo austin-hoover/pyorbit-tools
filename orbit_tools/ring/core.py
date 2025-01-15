@@ -20,6 +20,9 @@ from orbit.teapot import TEAPOT_MATRIX_Lattice
 from .diag import RingDiagnostic
 from ..bunch import get_bunch_cov
 from ..bunch import transform_bunch_linear
+from ..cov import normalization_matrix
+from ..cov import normalization_matrix_from_eigvecs
+from ..cov import normalize_eigvecs
 from ..lattice import get_matrix_lattice
 from ..utils import orbit_matrix_to_numpy
 
@@ -70,45 +73,6 @@ def track_dispersion(lattice: AccLattice, mass: float, kin_energy: float) -> dic
     return data
 
 
-def unit_symplectic_matrix(ndim: int = 4) -> np.ndarray:
-    U = np.zeros((ndim, ndim))
-    for i in range(0, ndim, 2):
-        U[i : i + 2, i : i + 2] = [[0.0, 1.0], [-1.0, 0.0]]
-    return U
-
-
-def normalize_eigenvectors(eigenvectors: np.ndarray) -> np.ndarray:
-    ndim = eigenvectors.shape[0]
-    U = unit_symplectic_matrix(ndim)
-    for i in range(0, ndim, 2):
-        v = eigenvectors[:, i]
-        val = np.linalg.multi_dot([np.conj(v), U, v]).imag
-        if val > 0.0:
-            (eigenvectors[:, i], eigenvectors[:, i + 1]) = (
-                eigenvectors[:, i + 1],
-                eigenvectors[:, i],
-            )
-        eigenvectors[:, i : i + 2] *= np.sqrt(2.0 / np.abs(val))
-    return eigenvectors
-
-
-def normalization_matrix_from_eigenvectors(eigenvectors: np.ndarray) -> np.ndarray:
-    V = np.zeros(eigenvectors.shape)
-    for i in range(0, V.shape[1], 2):
-        V[:, i] = eigenvectors[:, i].real
-        V[:, i + 1] = (1.0j * eigenvectors[:, i]).real
-    return V
-
-
-def normalization_matrix_from_covariance_matrix(S: np.ndarray) -> np.ndarray:
-    U = unit_symplectic_matrix(4)
-    SU = np.matmul(S, U)
-    eigenvalues, eigenvectors = np.linalg.eig(SU)
-    eigenvectors = normalize_eigenvectors(eigenvectors)
-    W = normalization_matrix_from_eigenvectors(eigenvectors)
-    return W
-
-
 def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLattice = None) -> Bunch:
     """Match the bunch covariance matrix to the ringn transfer matrix.
     
@@ -132,17 +96,20 @@ def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLa
     _mpi_size = orbit_mpi.MPI_Comm_size(_mpi_comm)
 
     # Get the lattice transfer matrix if not provided.
-    if transfer_matrix is None:
+    M = transfer_matrix
+    if M is None:
         if lattice is None:
             raise ValueError("Need lattice")
-        raise NotImplementedError
+        M = get_transfer_matrix(
+            lattice, mass=bunch.mass(), kin_energy=bunch.getSyncParticle().kinEnergy
+        )
     
     # Compute lattice normalization matrix V.
-    M = np.copy(transfer_matrix)
+    M = np.copy(M)
     M = M[:4, :4]
     eigenvalues, eigenvectors = np.linalg.eig(M)
-    eigenvectors = normalize_eigenvectors(eigenvectors)
-    V = normalization_matrix_from_eigenvectors(eigenvectors)
+    eigenvectors = normalize_eigvecs(eigenvectors)
+    V = normalization_matrix_from_eigvecs(eigenvectors)
 
     # Compute bunch normalization matrix W.
     S = get_bunch_cov(bunch)
@@ -150,8 +117,8 @@ def match_bunch(bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLa
     U = unit_symplectic_matrix(4)
     SU = np.matmul(S, U)
     eigenvalues, eigenvectors = np.linalg.eig(SU)
-    eigenvectors = normalize_eigenvectors(eigenvectors)
-    W = normalization_matrix_from_eigenvectors(eigenvectors)
+    eigenvectors = normalize_eigvecs(eigenvectors)
+    W = normalization_matrix_from_eigvecs(eigenvectors)
 
     # Transform the bunch.
     T = np.matmul(V, np.linalg.inv(W))
