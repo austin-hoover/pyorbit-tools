@@ -75,3 +75,23 @@ def test_match_bunch():
     lattice = make_lattice()
     bunch = make_bunch()
     bunch = ot.ring.match_bunch(bunch=bunch, lattice=lattice)
+
+
+def test_ring_diag_writer():
+    lattice = make_lattice()
+    bunch = make_bunch()
+    params_dict = {"bunch": bunch}
+
+    diag = ot.ring.BunchWriter(verbose=1, freq=1)
+    diag(params_dict)
+
+
+def test_ring_diag_monitor():
+    lattice = make_lattice()
+    bunch = make_bunch()
+    params_dict = {"bunch": bunch}
+
+    diag = ot.ring.BunchMonitor(verbose=1, freq=1)
+    diag(params_dict)
+
+
