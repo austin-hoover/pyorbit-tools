@@ -1,4 +1,5 @@
 from . import bunch
+from . import coupling
 from . import cov
 from . import linac
 from . import linac
@@ -6,3 +7,4 @@ from . import misc
 from . import points
 from . import ring
 from . import utils
+from .core import *
