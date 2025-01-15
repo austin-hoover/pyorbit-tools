@@ -111,7 +111,7 @@ def test_set_bunch_centroid():
 
 def test_get_bunch_cov():
     bunch = make_gaussian_bunch()
-    cov = ot.bunch.get_cov(bunch)
+    cov = ot.bunch.get_bunch_cov(bunch)
 
 
 def test_generate_bunch():
@@ -120,8 +120,7 @@ def test_generate_bunch():
 
     bunch = Bunch()
     bunch = ot.bunch.generate_bunch(sample, size=128, bunch=bunch)
-    return bunch
-
+    assert bunch.getSize() == 128
 
 def test_get_bunch_twiss_containers():
     bunch = make_gaussian_bunch()

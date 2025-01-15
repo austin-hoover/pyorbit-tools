@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pytest
 
@@ -9,6 +10,9 @@ from orbit.teapot import QuadTEAPOT
 from orbit.teapot import TEAPOT_Lattice
 
 import orbit_tools as ot
+
+
+os.makedirs("outputs", exist_ok=True)
 
 
 def make_bunch(mass: float = 0.938, energy: float = 1.000) -> Bunch:
@@ -79,7 +83,13 @@ def test_track_dispersion():
 def test_match_bunch():
     lattice = make_lattice()
     bunch = make_bunch()
-    bunch = ot.ring.match_bunch(bunch=bunch, lattice=lattice)
+
+    cov_matrix = np.eye(6)
+    points = np.random.multivariate_normal(np.zeros(6), cov_matrix, size=10_000)
+    bunch = ot.bunch.set_bunch_coords(bunch, points)
+
+    transfer_matrix = ot.ring.get_transfer_matrix(lattice, mass=0.938, kin_energy=1.000)
+    bunch = ot.ring.match_bunch(bunch=bunch, transfer_matrix=transfer_matrix, block_diag=True)
 
 
 def test_ring_diag_writer():
@@ -87,14 +97,13 @@ def test_ring_diag_writer():
     bunch = make_bunch()
     params_dict = {"bunch": bunch}
 
-    diag = ot.ring.BunchWriter(verbose=1, freq=1)
+    diag = ot.ring.BunchWriter(output_dir="outputs", verbose=1, freq=1)
     diag(params_dict)
 
 
 def test_ring_diag_monitor():
-    lattice = make_lattice()
     bunch = make_bunch()
     params_dict = {"bunch": bunch}
 
-    diag = ot.ring.BunchMonitor(verbose=1, freq=1)
+    diag = ot.ring.BunchMonitor(output_dir="outputs", verbose=1, freq=1)
     diag(params_dict)

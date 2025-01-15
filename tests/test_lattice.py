@@ -63,20 +63,19 @@ def make_lattice() -> AccLattice:
 def test_get_sublattice():
     lattice = make_lattice()
     sublattice = ot.lattice.get_sublattice(lattice, start=0, stop=5)
-    assert len(lattice.getNodes()) > 0
+    assert sublattice.getNodes()[0] is lattice.getNodes()[0]
+    assert sublattice.getNodes()[4] is lattice.getNodes()[4]
 
 
 def test_split_node():
     lattice = make_lattice()
     node = lattice.getNodes()[0]
     node = ot.lattice.split_node(node, max_part_length=0.1)
-    assert len(lattice.getNodes()) > 0
 
 def test_split_lattice():
     lattice = make_lattice()
     node = lattice.getNodes()[0]
     lattice = ot.lattice.split_lattice(lattice, 0.1)
-    assert len(lattice.getNodes()) > 0
 
 
 def test_get_node_for_name_any_case():
