@@ -103,27 +103,15 @@ def get_bunch_centroid(bunch: Bunch) -> np.ndarray:
 
 
 def set_bunch_centroid(bunch: Bunch, centroid: np.ndarray) -> Bunch:
-    centroid_shift = centroid - get_bunch_centroid(bunch)
-    bunch = shift_bunch_centroid(bunch, *centroid_shift)
+    offset = centroid - get_bunch_centroid(bunch)
+    bunch = shift_bunch_centroid(bunch, offset)
     return bunch
 
 
-def shift_bunch_centroid(
-    bunch: Bunch,
-    x: float = 0.0,
-    xp: float = 0.0,
-    y: float = 0.0,
-    yp: float = 0.0,
-    z: float = 0.0,
-    de: float = 0.0,
-) -> Bunch:
-    for i in range(bunch.getSize()):
-        bunch.x(i, bunch.x(i) + x)
-        bunch.y(i, bunch.y(i) + y)
-        bunch.z(i, bunch.z(i) + z)
-        bunch.xp(i, bunch.xp(i) + xp)
-        bunch.yp(i, bunch.yp(i) + yp)
-        bunch.dE(i, bunch.dE(i) + de)
+def shift_bunch_centroid(bunch: Bunch, offset: np.ndarray) -> Bunch:
+    for index in range(bunch.getSize()):
+        coords = np.array(get_part_coords(bunch, index))
+        set_part_coords(bunch, index, coords + offset)
     return bunch
 
 
