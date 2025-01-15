@@ -53,7 +53,9 @@ def get_bunch_coords(bunch: Bunch, axis: tuple[int, ...] = None) -> np.ndarray:
     return X[:, axis]
 
 
-def set_bunch_coords(bunch: Bunch, X: np.ndarray, axis: tuple[int, ...] = None) -> Bunch:
+def set_bunch_coords(
+    bunch: Bunch, X: np.ndarray, axis: tuple[int, ...] = None
+) -> Bunch:
     if axis is None:
         axis = tuple(range(6))
 
@@ -74,9 +76,9 @@ def resize_bunch(bunch: Bunch, size: int) -> Bunch:
     X_new = np.zeros((size, 6))
 
     if X_old.shape[0] <= X_new.shape[0]:
-        X_new[:X_old.shape[0]] = X_old
+        X_new[: X_old.shape[0]] = X_old
     else:
-        X_new = X_old[:X_new.shape[0]]
+        X_new = X_old[: X_new.shape[0]]
 
     bunch.deleteAllParticles()
     for i in range(X_new.shape[0]):
@@ -124,7 +126,9 @@ def shift_bunch_centroid(
     return bunch
 
 
-def set_bunch_cov(bunch: Bunch, covariance_matrix: np.ndarray, block_diag: bool = True) -> Bunch:
+def set_bunch_cov(
+    bunch: Bunch, covariance_matrix: np.ndarray, block_diag: bool = True
+) -> Bunch:
     X_old = get_bunch_coords(bunch)
     S_old = np.cov(X_old.T)
 
@@ -143,7 +147,9 @@ def set_bunch_cov(bunch: Bunch, covariance_matrix: np.ndarray, block_diag: bool 
     return bunch
 
 
-def transform_bunch(bunch: Bunch, transform: Callable, axis: tuple[int, ...] = None) -> Bunch:
+def transform_bunch(
+    bunch: Bunch, transform: Callable, axis: tuple[int, ...] = None
+) -> Bunch:
     if axis is None:
         axis = tuple(range(6))
 
@@ -152,7 +158,9 @@ def transform_bunch(bunch: Bunch, transform: Callable, axis: tuple[int, ...] = N
     return set_bunch_coords(bunch, X)
 
 
-def transform_bunch_linear(bunch: Bunch, matrix: np.ndarray, axis: tuple[int, ...] = None) -> Bunch:
+def transform_bunch_linear(
+    bunch: Bunch, matrix: np.ndarray, axis: tuple[int, ...] = None
+) -> Bunch:
     return transform_bunch(bunch, lambda x: np.matmul(x, matrix.T), axis=axis)
 
 
@@ -173,7 +181,9 @@ def set_bunch_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
 
     Assumes bunch charge is already set.
     """
-    intensity = current_to_intensity(current=current, frequency=frequency, charge=bunch.charge())
+    intensity = current_to_intensity(
+        current=current, frequency=frequency, charge=bunch.charge()
+    )
     bunch_size_global = bunch.getSizeGlobal()
     if bunch_size_global > 0:
         macro_size = intensity / bunch_size_global
@@ -183,7 +193,7 @@ def set_bunch_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
 
 def decorrelate_bunch_x_y_z(bunch: Bunch, verbose: bool = False) -> Bunch:
     """Decorrelate x-y-z by randomly permuting particle indices.
-    
+
     Does not work with MPI.
     """
     size = bunch.getSizeGlobal()
@@ -193,19 +203,19 @@ def decorrelate_bunch_x_y_z(bunch: Bunch, verbose: bool = False) -> Bunch:
 
     if verbose:
         print("Building decorrelated bunch")
-    
+
     bunch_temp = Bunch()
     bunch.copyEmptyBunchTo(bunch_temp)
 
     indices = zip(idx_x, idx_y, idx_z)
     if verbose:
         indices = tqdm(indices)
-    
+
     for i, j, k in indices:
         bunch_temp.addParticle(
             bunch.x(i), bunch.xp(i), bunch.y(j), bunch.yp(j), bunch.z(k), bunch.dE(k)
         )
-        
+
     bunch_temp.copyBunchTo(bunch)
     bunch_temp.deleteAllParticles()
     return bunch
@@ -213,13 +223,13 @@ def decorrelate_bunch_x_y_z(bunch: Bunch, verbose: bool = False) -> Bunch:
 
 def decorrelate_bunch_xy_z(bunch: Bunch, verbose: bool = False) -> Bunch:
     """Decorrelate xy-z by randomly permuting particle indices.
-    
+
     Does not work with MPI.
     """
     size = bunch.getSizeGlobal()
     idx_xy = np.random.permutation(np.arange(size))
     idx_z = np.random.permutation(np.arange(size))
-    
+
     if verbose:
         print("Building decorrelated bunch")
 
@@ -234,7 +244,7 @@ def decorrelate_bunch_xy_z(bunch: Bunch, verbose: bool = False) -> Bunch:
         bunch_temp.addParticle(
             bunch.x(i), bunch.xp(i), bunch.y(i), bunch.yp(i), bunch.z(j), bunch.dE(j)
         )
-        
+
     bunch_temp.copyBunchTo(bunch)
     bunch_temp.deleteAllParticles()
     return bunch
@@ -244,7 +254,7 @@ def downsample_bunch(
     bunch: Bunch,
     new_size: int,
     method: str = "first",
-    conserve_intensity: bool =True,
+    conserve_intensity: bool = True,
     verbose: bool = True,
 ):
     """Delete a subset of the bunch particles.
@@ -292,18 +302,20 @@ def downsample_bunch(
         bunch.macroSize(macro_size)
 
     if verbose:
-        print('Downsampling complete.')
+        print("Downsampling complete.")
     return bunch
 
 
-def get_bunch_cov(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False) -> np.ndarray:
+def get_bunch_cov(
+    bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: bool = False
+) -> np.ndarray:
     order = 2
     twiss_calc = BunchTwissAnalysis()
     twiss_calc.computeBunchMoments(
         bunch,
         order,
         int(dispersion_flag),
-        int(emit_norm_flag)
+        int(emit_norm_flag),
     )
 
     S = np.zeros((6, 6))
@@ -314,7 +326,9 @@ def get_bunch_cov(bunch: Bunch, dispersion_flag: bool = False, emit_norm_flag: b
     return S
 
 
-def generate_bunch(sample: Callable, size: int, bunch: Bunch = None, verbose: bool = True) -> Bunch:
+def generate_bunch(
+    sample: Callable, size: int, bunch: Bunch = None, verbose: bool = True
+) -> Bunch:
     """Generate bunch from particle sampler..
 
     Parameters
