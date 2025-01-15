@@ -24,6 +24,7 @@ from ..bunch import transform_bunch_linear
 from ..cov import normalization_matrix
 from ..cov import normalization_matrix_from_eigvecs
 from ..cov import normalize_eigvecs
+from ..cov import unit_symplectic_matrix
 from ..utils import orbit_matrix_to_numpy
 
 
@@ -129,7 +130,10 @@ def track_dispersion(
 
 
 def match_bunch(
-    bunch: Bunch, transfer_matrix: np.ndarray = None, lattice: AccLattice = None
+    bunch: Bunch,
+    transfer_matrix: np.ndarray = None,
+    lattice: AccLattice = None,
+    block_diag: bool = False
 ) -> Bunch:
     """Match the bunch covariance matrix to the ringn transfer matrix.
 
@@ -147,35 +151,50 @@ def match_bunch(
         A periodic symplectic transfer matrix.
     lattice : AccLattice
         A periodic lattice. Must be provided if `transfer_matrix=None`.
+    block_diag : bool
+        Whether to only match 2x2 block diagonal elements of covariance matrix.
     """
-    _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
-    _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
-    _mpi_size = orbit_mpi.MPI_Comm_size(_mpi_comm)
-
     # Get the lattice transfer matrix if not provided.
     M = transfer_matrix
     if M is None:
         if lattice is None:
             raise ValueError("Need lattice")
         M = get_transfer_matrix(
-            lattice, mass=bunch.mass(), kin_energy=bunch.getSyncParticle().kinEnergy
+            lattice=lattice, mass=bunch.mass(), kin_energy=bunch.getSyncParticle().kinEnergy
         )
 
     # Compute lattice normalization matrix V.
     M = np.copy(M)
     M = M[:4, :4]
-    eigenvalues, eigenvectors = np.linalg.eig(M)
-    eigenvectors = normalize_eigvecs(eigenvectors)
-    V = normalization_matrix_from_eigvecs(eigenvectors)
+
+    V = np.eye(4)
+    if block_diag:
+        for i in (0, 2):
+            eigvals, eigvecs = np.linalg.eig(M[i:i+2, i:i+2])
+            eigvecs = normalize_eigvecs(eigvecs)
+            V[i:i+2, i:i+2] = normalization_matrix_from_eigvecs(eigvecs)
+    else:
+        eigenvalues, eigenvectors = np.linalg.eig(M)
+        eigenvectors = normalize_eigvecs(eigenvectors)
+        V = normalization_matrix_from_eigvecs(eigenvectors)
 
     # Compute bunch normalization matrix W.
     S = get_bunch_cov(bunch)
     S = S[:4, :4]
     U = unit_symplectic_matrix(4)
-    SU = np.matmul(S, U)
-    eigenvalues, eigenvectors = np.linalg.eig(SU)
-    eigenvectors = normalize_eigvecs(eigenvectors)
-    W = normalization_matrix_from_eigvecs(eigenvectors)
+
+    W = np.eye(4)
+    if block_diag:
+        for i in (0, 2):
+            SU = np.matmul(S[i:i+2, i:i+2], U[i:i+2, i:i+2])
+            eigvals, eigvecs = np.linalg.eig(SU)
+            eigvecs = normalize_eigvecs(eigvecs)
+            W[i:i+2, i:i+2] = normalization_matrix_from_eigvecs(eigvecs)
+    else:
+        SU = np.matmul(S, U)
+        eigenvalues, eigenvectors = np.linalg.eig(SU)
+        eigenvectors = normalize_eigvecs(eigenvectors)
+        W = normalization_matrix_from_eigvecs(eigenvectors)
 
     # Transform the bunch.
     T = np.matmul(V, np.linalg.inv(W))
