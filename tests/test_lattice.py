@@ -59,29 +59,29 @@ def make_lattice() -> AccLattice:
 
     return lattice
 
-#
-# def test_get_sublattice():
-#     lattice = make_lattice()
-#     sublattice = ot.lattice.get_sublattice(lattice, start=0, stop=5)
-#     assert len(lattice.getNodes()) > 0
-#
-#
-# def test_split_node():
-#     lattice = make_lattice()
-#     node = lattice.getNodes()[0]
-#     node = ot.lattice.split_node(node, max_part_length=0.1)
-#     assert len(lattice.getNodes()) > 0
-#
-# def test_split_lattice():
-#     lattice = make_lattice()
-#     node = lattice.getNodes()[0]
-#     lattice = ot.lattice.split_lattice(lattice, 0.1)
-#     assert len(lattice.getNodes()) > 0
-#
 
-def get_node_for_name_any_case():
-    # lattice = make_lattice()
-    # name = lattice.getNodes()[0].getName()
-    # node1 = ot.lattice.get_node_for_name_any_case(lattice, name=name.lower())
-    # node2 = ot.lattice.get_node_for_name_any_case(lattice, name=name.upper())
-    assert 2 < 1
+def test_get_sublattice():
+    lattice = make_lattice()
+    sublattice = ot.lattice.get_sublattice(lattice, start=0, stop=5)
+    assert len(lattice.getNodes()) > 0
+
+
+def test_split_node():
+    lattice = make_lattice()
+    node = lattice.getNodes()[0]
+    node = ot.lattice.split_node(node, max_part_length=0.1)
+    assert len(lattice.getNodes()) > 0
+
+def test_split_lattice():
+    lattice = make_lattice()
+    node = lattice.getNodes()[0]
+    lattice = ot.lattice.split_lattice(lattice, 0.1)
+    assert len(lattice.getNodes()) > 0
+
+
+def test_get_node_for_name_any_case():
+    lattice = make_lattice()
+    name = lattice.getNodes()[0].getName()
+    node1 = ot.lattice.get_node_for_name_any_case(lattice, name=name.lower())
+    node2 = ot.lattice.get_node_for_name_any_case(lattice, name=name.upper())
+    assert node1 is node2
