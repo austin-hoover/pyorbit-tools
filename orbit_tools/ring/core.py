@@ -8,13 +8,14 @@ from typing import Optional
 import numpy as np
 from tqdm import tqdm
 
-import orbit.lattice
 from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
 from orbit.core.bunch import BunchTwissAnalysis
+from orbit.core.orbit_utils import BunchExtremaCalculator
 from orbit.lattice import AccLattice
 from orbit.lattice import AccActionsContainer
-from orbit.core.orbit_utils import BunchExtremaCalculator
+from orbit.matrix_lattice import MATRIX_Lattice
+from orbit.teapot import TEAPOT_MATRIX_Lattice
 
 from .diag import RingDiagnostic
 from ..bunch import get_bunch_cov
@@ -36,7 +37,7 @@ def track_twiss(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
     
-    matrix_lattice = orbit.lattice.TEAPOT_MATRIX_Lattice(lattice, bunch)
+    matrix_lattice = TEAPOT_MATRIX_Lattice(lattice, bunch)
     (pos_nu_x, pos_alpha_x, pos_beta_x) = matrix_lattice.getRingTwissDataX()
     (pos_nu_y, pos_alpha_y, pos_beta_y) = matrix_lattice.getRingTwissDataY()
     
