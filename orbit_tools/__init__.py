@@ -3,7 +3,7 @@ from . import coupling
 from . import cov
 from . import lattice
 from . import linac
-from . import misc
 from . import ring
+from . import sim
 from . import utils
 from .core import *

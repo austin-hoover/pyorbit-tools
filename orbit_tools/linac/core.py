@@ -31,12 +31,14 @@ from orbit.py_linac.lattice import LinacTrMatricesController
 from orbit.py_linac.lattice import OverlappingQuadsNode
 from orbit.py_linac.lattice import Quad
 
-import orbit_tools.bunch
+from orbit_tools.bunch import get_bunch_coords
+from orbit_tools.bunch import set_bunch_coords
+from orbit_tools.bunch import reverse_bunch
 from orbit_tools.bunch import get_z_to_phase_coefficient
-from orbit_tools.misc import get_lorentz_factors
 from orbit_tools.cov import projected_emittances
 from orbit_tools.cov import intrinsic_emittances
 from orbit_tools.cov import twiss_2d
+from orbit_tools.utils import get_lorentz_factors
 from orbit_tools.utils import orbit_matrix_to_numpy
 
 
@@ -814,11 +816,11 @@ class LinacTransform:
         x_new[:, self.axis] = x
 
         bunch = self.get_new_bunch()
-        bunch = orbit_tools.bunch.set_coords(bunch, x_new, verbose=False)
+        bunch = set_bunch_coords(bunch, x_new, verbose=False)
         self.lattice.trackBunch(
             bunch, index_start=self.index_start, index_stop=self.index_stop
         )
-        U = orbit_tools.bunch.get_coords(bunch)
+        U = bunch.get_bunch_coords(bunch)
         U = U[:, self.axis]
         return U
 
@@ -830,14 +832,14 @@ class LinacTransform:
         u_new[:, self.axis] = u_new
 
         bunch = self.get_new_bunch()
-        bunch = orbit_tools.bunch.set_coords(bunch, u_new, verbose=False)
-        bunch = orbit_tools.bunch.reverse(bunch)
+        bunch = oset_bunch_coords(bunch, u_new, verbose=False)
+        bunch = reverse_bunch(bunch)
         self.lattice.reverseOrder()
         self.lattice.trackBunch(
             bunch, index_start=self.index_stop, index_stop=self.index_start
         )
         self.lattice.reverseOrder()
-        bunch = orbit_tools.bunch.reverse(bunch)
-        x = orbit_tools.bunch.get_coords(bunch)
+        bunch = reverse_bunch(bunch)
+        x = get_bunch_coords(bunch)
         x = x[:, self.axis]
         return x
