@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import pytest
 
@@ -10,9 +9,6 @@ from orbit.teapot import QuadTEAPOT
 from orbit.teapot import TEAPOT_Lattice
 
 import orbit_tools as ot
-
-
-os.makedirs("outputs", exist_ok=True)
 
 
 def make_bunch(mass: float = 0.938, energy: float = 1.000) -> Bunch:
@@ -64,48 +60,23 @@ def make_lattice() -> AccLattice:
     return lattice
 
 
-def test_get_transfer_matrix():
-    lattice = make_lattice()
-    M = ot.ring.get_transfer_matrix(lattice, mass=0.938, kin_energy=1.000)
-    assert M.shape == (6, 6)
-
-
-def test_track_twiss():
-    lattice = make_lattice()
-    ot.ring.track_twiss(lattice, mass=0.938, kin_energy=1.000)
-
-
-def test_track_dispersion():
-    lattice = make_lattice()
-    ot.ring.track_dispersion(lattice, mass=0.938, kin_energy=1.000)
-
-
-def test_match_bunch():
+def test_track_bunch():
     lattice = make_lattice()
     bunch = make_bunch()
-
-    cov_matrix = np.eye(6)
-    points = np.random.multivariate_normal(np.zeros(6), cov_matrix, size=10_000)
-    bunch = ot.bunch.set_bunch_coords(bunch, points)
-
-    transfer_matrix = ot.ring.get_transfer_matrix(lattice, mass=0.938, kin_energy=1.000)
-    bunch = ot.ring.match_bunch(
-        bunch=bunch, transfer_matrix=transfer_matrix, block_diag=True
+    bunch_out = ot.sim.track_bunch(
+        lattice=lattice, bunch=bunch, index_start=0, index_stop=2, copy=True
     )
 
 
-def test_ring_diag_writer():
+def test_orbit_transform():
     lattice = make_lattice()
     bunch = make_bunch()
-    params_dict = {"bunch": bunch}
 
-    diag = ot.ring.BunchWriter(output_dir="outputs", verbose=1, freq=1)
-    diag(params_dict)
+    transform = ot.sim.ORBITTransform(
+        lattice=lattice, bunch=bunch, axis=(0, 1), index_start=0, index_stop=2
+    )
 
-
-def test_ring_diag_monitor():
-    bunch = make_bunch()
-    params_dict = {"bunch": bunch}
-
-    diag = ot.ring.BunchMonitor(output_dir="outputs", verbose=1, freq=1)
-    diag(params_dict)
+    axis = (0, 1)
+    X = ot.bunch.get_bunch_coords(bunch)
+    X = X[:, axis]
+    X_out = transform(X)

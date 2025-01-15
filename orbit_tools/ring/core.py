@@ -133,7 +133,7 @@ def match_bunch(
     bunch: Bunch,
     transfer_matrix: np.ndarray = None,
     lattice: AccLattice = None,
-    block_diag: bool = False
+    block_diag: bool = False,
 ) -> Bunch:
     """Match the bunch covariance matrix to the ringn transfer matrix.
 
@@ -160,7 +160,9 @@ def match_bunch(
         if lattice is None:
             raise ValueError("Need lattice")
         M = get_transfer_matrix(
-            lattice=lattice, mass=bunch.mass(), kin_energy=bunch.getSyncParticle().kinEnergy
+            lattice=lattice,
+            mass=bunch.mass(),
+            kin_energy=bunch.getSyncParticle().kinEnergy,
         )
 
     # Compute lattice normalization matrix V.
@@ -170,9 +172,9 @@ def match_bunch(
     V = np.eye(4)
     if block_diag:
         for i in (0, 2):
-            eigvals, eigvecs = np.linalg.eig(M[i:i+2, i:i+2])
+            eigvals, eigvecs = np.linalg.eig(M[i : i + 2, i : i + 2])
             eigvecs = normalize_eigvecs(eigvecs)
-            V[i:i+2, i:i+2] = normalization_matrix_from_eigvecs(eigvecs)
+            V[i : i + 2, i : i + 2] = normalization_matrix_from_eigvecs(eigvecs)
     else:
         eigenvalues, eigenvectors = np.linalg.eig(M)
         eigenvectors = normalize_eigvecs(eigenvectors)
@@ -186,10 +188,10 @@ def match_bunch(
     W = np.eye(4)
     if block_diag:
         for i in (0, 2):
-            SU = np.matmul(S[i:i+2, i:i+2], U[i:i+2, i:i+2])
+            SU = np.matmul(S[i : i + 2, i : i + 2], U[i : i + 2, i : i + 2])
             eigvals, eigvecs = np.linalg.eig(SU)
             eigvecs = normalize_eigvecs(eigvecs)
-            W[i:i+2, i:i+2] = normalization_matrix_from_eigvecs(eigvecs)
+            W[i : i + 2, i : i + 2] = normalization_matrix_from_eigvecs(eigvecs)
     else:
         SU = np.matmul(S, U)
         eigenvalues, eigenvectors = np.linalg.eig(SU)

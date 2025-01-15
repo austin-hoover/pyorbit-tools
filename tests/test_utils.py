@@ -15,7 +15,6 @@ def test_get_momentum():
     ot.utils.get_momentum(mass=0.938, kin_energy=1.000)
 
 
-
 def test_get_magnetic_rigidity():
     ot.utils.get_magnetic_rigidity(mass=0.938, kin_energy=1.000)
 
@@ -25,7 +24,9 @@ def test_get_perveance():
 
 
 def test_get_intensity_from_perveance():
-    ot.utils.get_intensity_from_perveance(perveance=1.0e-4, mass=0.938, kin_energy=1.000, length=1.0)
+    ot.utils.get_intensity_from_perveance(
+        perveance=1.0e-4, mass=0.938, kin_energy=1.000, length=1.0
+    )
 
 
 def test_orbit_matrix_to_numpy():

@@ -72,6 +72,7 @@ def test_split_node():
     node = lattice.getNodes()[0]
     node = ot.lattice.split_node(node, max_part_length=0.1)
 
+
 def test_split_lattice():
     lattice = make_lattice()
     node = lattice.getNodes()[0]

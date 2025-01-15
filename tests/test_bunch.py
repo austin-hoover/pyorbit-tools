@@ -122,6 +122,7 @@ def test_generate_bunch():
     bunch = ot.bunch.generate_bunch(sample, size=128, bunch=bunch)
     assert bunch.getSize() == 128
 
+
 def test_get_bunch_twiss_containers():
     bunch = make_gaussian_bunch()
     twiss_x, twiss_y, twiss_z = ot.bunch.get_bunch_twiss_containers(bunch)
