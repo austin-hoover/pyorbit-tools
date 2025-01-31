@@ -162,7 +162,7 @@ class BunchMonitor(RingDiagnostic):
             self.history["runtime"] = runtime
 
         # Print update message
-        if self.verbose and (self._mpi_rank == 0):
+        if (self._mpi_rank == 0) and self.verbose:
             message = f"turn={self.turn:05.0f} t={runtime:0.3f} size={size:05.0f}"
             message = "{} xrms={:0.2f}".format(message, x_rms * 1000.0)
             message = "{} yrms={:0.2f}".format(message, y_rms * 1000.0)
@@ -171,7 +171,7 @@ class BunchMonitor(RingDiagnostic):
             sys.stdout.flush()
 
         # Add line to history file
-        if (self.file is not None) and (self._mpi_rank == 0):
+        if (self._mpi_rank == 0) and (self.file is not None):
             data = [self.history[key] for key in self.history]
             line = ""
             for i in range(len(data)):
