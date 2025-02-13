@@ -28,7 +28,7 @@ def make_grid(
     
     grid = None
     if ndim == 1:
-        grid = Grid1D(self.shape[0] + 1, limits[0][0], limits[0][1])
+        grid = Grid1D(shape[0] + 1, limits[0][0], limits[0][1])
     elif ndim == 2:
         grid = Grid2D(
             shape[0] + 1,
