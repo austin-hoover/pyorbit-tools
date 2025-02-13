@@ -56,13 +56,13 @@ class Transform:
     def __init__(self) -> None:
         return
 
-    def __call__(self, X: np.ndarray) -> np.ndarray:
-        return self.forward(X)
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        return self.forward(x)
 
-    def forward(self, X: np.ndarray) -> np.ndarray:
+    def forward(self, x: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
 
-    def inverse(self, U: np.ndarray) -> np.ndarray:
+    def inverse(self, u: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
 
 
@@ -100,12 +100,12 @@ class ORBITTransform(Transform):
             copy=True,
         )
 
-    def forward(self, X: np.ndarray) -> np.ndarray:
-        self.bunch = set_bunch_coords(self.bunch, X, axis=self.axis)
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self.bunch = set_bunch_coords(self.bunch, x, axis=self.axis)
         bunch = self.track_bunch()
         return get_bunch_coords(bunch, axis=self.axis)
 
-    def inverse(self, X: np.ndarray) -> np.ndarray:
-        self.bunch = set_bunch_coords(self.bunch, X, axis=self.axis)
+    def inverse(self, x: np.ndarray) -> np.ndarray:
+        self.bunch = set_bunch_coords(self.bunch, x, axis=self.axis)
         bunch = self.track_bunch_reverse()
         return get_bunch_coords(bunch, axis=self.axis)
