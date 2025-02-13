@@ -1,3 +1,5 @@
+__version__ = "0.0.2"
+
 from . import bunch
 from . import coupling
 from . import cov

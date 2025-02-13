@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyorbit-tools"
-version = "0.0.1"
 authors = [
   { name="Austin Hoover", email="hooveram@ornl.gov" },
 ]
@@ -15,16 +14,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "hydra-core",
-    "matplotlib>=3.9.2",
-    "numpy>=2.1.1",
-    "omegaconf>=2.3.0",
-    "pandas>=2.2.3",
-    "pyyaml>=6.0.2",
-    "scipy>=1.14.1",
-    "tqdm>=4.66.5",
-]
+dynamic = ["dependencies", "version"]
 
 [project.urls]
 Homepage = "https://github.com/austin-hoover/pyorbit-tools"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+version = {attr = "orbit_tools.__version__"}
