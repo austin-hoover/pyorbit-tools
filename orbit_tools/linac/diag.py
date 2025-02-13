@@ -122,9 +122,7 @@ class ScalarBunchMonitor(LinacDiagnostic):
                 self.history[key] = None
 
             if self.output_dir is not None:
-                self.history_file = open(
-                    os.path.join(self.output_dir, "history.dat"), "w"
-                )
+                self.history_file = open(os.path.join(self.output_dir, "history.dat"), "w")
                 line = ",".join(list(self.history))
                 line = line[:-1] + "\n"
                 self.history_file.write(line)
@@ -178,9 +176,7 @@ class ScalarBunchMonitor(LinacDiagnostic):
 
     def measure_extrema(self) -> None:
         extrema_calculator = BunchExtremaCalculator()
-        (x_min, x_max, y_min, y_max, z_min, z_max) = extrema_calculator.extremaXYZ(
-            self.bunch
-        )
+        (x_min, x_max, y_min, y_max, z_min, z_max) = extrema_calculator.extremaXYZ(self.bunch)
         if self._mpi_rank == 0:
             self.history["x_min"] = x_min
             self.history["x_max"] = x_max

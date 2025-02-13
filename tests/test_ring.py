@@ -89,9 +89,7 @@ def test_match_bunch():
     bunch = ot.bunch.set_bunch_coords(bunch, points)
 
     transfer_matrix = ot.ring.get_transfer_matrix(lattice, mass=0.938, kin_energy=1.000)
-    bunch = ot.ring.match_bunch(
-        bunch=bunch, transfer_matrix=transfer_matrix, block_diag=True
-    )
+    bunch = ot.ring.match_bunch(bunch=bunch, transfer_matrix=transfer_matrix, block_diag=True)
 
 
 def test_ring_diag_writer():

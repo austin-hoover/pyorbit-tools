@@ -64,9 +64,7 @@ def unnormalize_beta_z(mass: float, kin_energy: float, beta_z: float) -> float:
     return beta_z
 
 
-def get_node_info(
-    name: str = None, position: float = None, lattice: AccLattice = None
-) -> dict:
+def get_node_info(name: str = None, position: float = None, lattice: AccLattice = None) -> dict:
     """Return node, node index, start and stop position from node name or center position.
 
     Returns dict:
@@ -228,9 +226,7 @@ def make_phase_aperture_node(
     return aperture_node
 
 
-def make_energy_aperture_node(
-    energy_min: float, energy_max: float
-) -> LinacEnergyApertureNode:
+def make_energy_aperture_node(energy_min: float, energy_max: float) -> LinacEnergyApertureNode:
     aperture_node = LinacEnergyApertureNode()
     aperture_node.setMinMaxEnergy(energy_min, energy_max)
     return aperture_node
@@ -256,9 +252,7 @@ def check_sync_time(
     sync_time_design = 0.0
 
     if start_node_info["index"] > 0:
-        design_bunch = lattice.trackDesignBunch(
-            bunch, index_start=0, index_stop=start["index"]
-        )
+        design_bunch = lattice.trackDesignBunch(bunch, index_start=0, index_stop=start["index"])
         sync_time_design = design_bunch.getSyncParticle().time()
 
     if _mpi_rank == 0 and verbose:
@@ -271,11 +265,7 @@ def check_sync_time(
             print("    Setting to design value.")
         bunch.getSyncParticle().time(sync_time_design)
         if _mpi_rank == 0 and verbose:
-            print(
-                "bunch.getSyncParticle().time() = {}".format(
-                    bunch.getSyncParticle().time()
-                )
-            )
+            print("bunch.getSyncParticle().time() = {}".format(bunch.getSyncParticle().time()))
 
 
 def estimate_transfer_matrix(
@@ -309,9 +299,7 @@ def estimate_transfer_matrix(
             (-0.000, 0.000),
         ]
     test_bunch_lb, test_bunch_ub = list(zip(*test_bunch_limits))
-    test_bunch_coords = rng.uniform(
-        test_bunch_lb, test_bunch_ub, size=(test_bunch_size, 6)
-    )
+    test_bunch_coords = rng.uniform(test_bunch_lb, test_bunch_ub, size=(test_bunch_size, 6))
 
     test_bunch = Bunch()
     bunch.copyEmptyBunchTo(test_bunch)
@@ -327,21 +315,15 @@ def estimate_transfer_matrix(
     return matrix
 
 
-def save_node_positions(
-    lattice: AccLattice, filename: str = "lattice_nodes.txt"
-) -> None:
+def save_node_positions(lattice: AccLattice, filename: str = "lattice_nodes.txt") -> None:
     file = open(filename, "w")
     file.write("node position length\n")
     for node in lattice.getNodes():
-        file.write(
-            "{} {} {}\n".format(node.getName(), node.getPosition(), node.getLength())
-        )
+        file.write("{} {} {}\n".format(node.getName(), node.getPosition(), node.getLength()))
     file.close()
 
 
-def save_lattice_structure(
-    lattice: AccLattice, filename: str = "lattice_structure.txt"
-) -> None:
+def save_lattice_structure(lattice: AccLattice, filename: str = "lattice_structure.txt") -> None:
     file = open(filename, "w")
     file.write(lattice.structureToText())
     file.close()
@@ -583,9 +565,7 @@ class BunchMonitor:
         # Measure mean and covariance.
         twiss_analysis = BunchTwissAnalysis()
         order = 2
-        twiss_analysis.computeBunchMoments(
-            bunch, order, self.dispersion_flag, self.emit_norm_flag
-        )
+        twiss_analysis.computeBunchMoments(bunch, order, self.dispersion_flag, self.emit_norm_flag)
 
         mean = np.zeros(6)
         for i in range(6):
@@ -650,9 +630,7 @@ class BunchMonitor:
 
         # Measure maximum phase space coordinates.
         extrema_calculator = BunchExtremaCalculator()
-        (x_min, x_max, y_min, y_max, z_min, z_max) = extrema_calculator.extremaXYZ(
-            bunch
-        )
+        (x_min, x_max, y_min, y_max, z_min, z_max) = extrema_calculator.extremaXYZ(bunch)
         if _mpi_rank == 0:
             self.history["x_min"] = x_min
             self.history["x_max"] = x_max
@@ -691,17 +669,13 @@ class BunchMonitor:
 
         # Write phase space coordinates to file.
         if self.write is not None:
-            if force_update or (
-                self.stride_write <= (position - self.last_write_position)
-            ):
+            if force_update or (self.stride_write <= (position - self.last_write_position)):
                 self.write(bunch, tag=node.getName())
                 self.last_write_position = position
 
         # Call plotting routines.
         if self.plot is not None and _mpi_rank == 0:
-            if force_update or (
-                self.stride_plot <= (position - self.last_plot_position)
-            ):
+            if force_update or (self.stride_plot <= (position - self.last_plot_position)):
                 info = dict()
                 for key in self.history:
                     if self.history[key]:
@@ -749,9 +723,7 @@ class BunchMonitorRMS:
         order = 2
         dispersion_flag = 0
         emitt_norm_flag = 0
-        twiss_analysis.computeBunchMoments(
-            bunch, order, dispersion_flag, emitt_norm_flag
-        )
+        twiss_analysis.computeBunchMoments(bunch, order, dispersion_flag, emitt_norm_flag)
         x_rms = np.sqrt(twiss_analysis.getCorrelation(0, 0))
         y_rms = np.sqrt(twiss_analysis.getCorrelation(2, 2))
 
@@ -817,9 +789,7 @@ class LinacTransform:
 
         bunch = self.get_new_bunch()
         bunch = set_bunch_coords(bunch, x_new, verbose=False)
-        self.lattice.trackBunch(
-            bunch, index_start=self.index_start, index_stop=self.index_stop
-        )
+        self.lattice.trackBunch(bunch, index_start=self.index_start, index_stop=self.index_stop)
         U = bunch.get_bunch_coords(bunch)
         U = U[:, self.axis]
         return U
@@ -835,9 +805,7 @@ class LinacTransform:
         bunch = oset_bunch_coords(bunch, u_new, verbose=False)
         bunch = reverse_bunch(bunch)
         self.lattice.reverseOrder()
-        self.lattice.trackBunch(
-            bunch, index_start=self.index_stop, index_stop=self.index_start
-        )
+        self.lattice.trackBunch(bunch, index_start=self.index_stop, index_stop=self.index_start)
         self.lattice.reverseOrder()
         bunch = reverse_bunch(bunch)
         x = get_bunch_coords(bunch)

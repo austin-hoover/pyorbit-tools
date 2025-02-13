@@ -28,9 +28,7 @@ from ..cov import unit_symplectic_matrix
 from ..utils import orbit_matrix_to_numpy
 
 
-def read_mad_file(
-    lattice: AccLattice, path: str, sequence: str, kind: str = "auto"
-) -> AccLattice:
+def read_mad_file(lattice: AccLattice, path: str, sequence: str, kind: str = "auto") -> AccLattice:
     if not os.path.exists(path):
         raise FileNotFoundError
 
@@ -68,9 +66,7 @@ def set_lattice_fringe(lattice: AccLattice, setting: bool) -> AccLattice:
     return lattice
 
 
-def get_matrix_lattice(
-    lattice: AccLattice, mass: float, kin_energy: float
-) -> MATRIX_Lattice:
+def get_matrix_lattice(lattice: AccLattice, mass: float, kin_energy: float) -> MATRIX_Lattice:
     bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
@@ -87,9 +83,7 @@ def get_transfer_matrix(
     return M
 
 
-def track_twiss(
-    lattice: AccLattice, mass: float, kin_energy: float
-) -> dict[str, np.ndarray]:
+def track_twiss(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str, np.ndarray]:
     bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
@@ -109,9 +103,7 @@ def track_twiss(
     return data
 
 
-def track_dispersion(
-    lattice: AccLattice, mass: float, kin_energy: float
-) -> dict[str, np.ndarray]:
+def track_dispersion(lattice: AccLattice, mass: float, kin_energy: float) -> dict[str, np.ndarray]:
     bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(kin_energy)
@@ -241,8 +233,6 @@ class Tracker:
             action_container.addAction(action, AccActionsContainer.EXIT)
 
         for turn in self.get_turns_list(nturns):
-            self.lattice.trackBunch(
-                self.bunch, self.params_dict, actionContainer=action_container
-            )
+            self.lattice.trackBunch(self.bunch, self.params_dict, actionContainer=action_container)
             for diagnostic in self.diagnostics:
                 diagnostic(self.params_dict)
