@@ -16,7 +16,7 @@ os.makedirs("outputs", exist_ok=True)
 
 
 def make_bunch(mass: float = 0.938, energy: float = 1.000) -> Bunch:
-    bunch = Bunch(mass=mass, energy=energy)
+    bunch = Bunch()
     bunch.mass(mass)
     bunch.getSyncParticle().kinEnergy(energy)
     return bunch

@@ -9,3 +9,9 @@ from . import ring
 from . import sim
 from . import utils
 from .core import *
+from .bunch import *
+from .diag import Diagnostic
+from .diag import BunchHistogram
+from .lattice import *
+from .sim import *
+from .utils import *
