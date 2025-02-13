@@ -22,10 +22,7 @@ class RingDiagnostic(Diagnostic):
         self.freq = freq
         self.turn = 0
 
-    def track(params_dict: dict) -> None:
-        raise NotImplementedError
-
-    def should_skip(self) -> None:
+    def skip(self) -> bool:
         return self.turn % self.freq != 0
 
     def update(self) -> None:

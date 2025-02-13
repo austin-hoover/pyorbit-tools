@@ -31,14 +31,6 @@ class LinacDiagnostic(Diagnostic):
         self.node = None
         self.bunch = None
 
-    def track(params_dict: dict) -> None:
-        raise NotImplementedError
-
-    def __call__(self, params_dict: dict, force_update: bool = False) -> None:
-        if force_update or not self.should_skip():
-            self.track(params_dict)
-        self.update()
-
     def update(self, params_dict: dict) -> None:
         self.position_old = self.position
         self.read_params_dict()
@@ -49,7 +41,7 @@ class LinacDiagnostic(Diagnostic):
         self.position = params_dict["path_length"] + self.position_start
         self.node = params_dict["node"]
 
-    def should_skip(self, params_dict: dict) -> None:
+    def skip(self, params_dict: dict) -> None:
         if self.index == 0:
             return False
         if self.position - self.position_old >= self.stride:
@@ -60,6 +52,11 @@ class LinacDiagnostic(Diagnostic):
         self.position = self.position_old = self.position_start
         self.index = index_start
         self.node = None
+
+    def __call__(self, params_dict: dict, force_update: bool = False) -> None:
+        if force_update or not self.skip():
+            self.track(params_dict)
+        self.update()
 
 
 class BunchWriter(LinacDiagnostic):
