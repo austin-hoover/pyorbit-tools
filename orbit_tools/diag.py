@@ -21,10 +21,11 @@ def get_grid_points(coords: list[np.ndarray]) -> np.ndarray:
 
 
 def make_grid(
-    axis: tuple[int, ...], shape: tuple[int, ...], limits: list[tuple[float, float]]
+    shape: tuple[int, ...], 
+    limits: list[tuple[float, float]]
 ) -> Union[Grid1D, Grid2D, Grid3D]:
     
-    ndim = len(axis)
+    ndim = len(shape)
     
     grid = None
     if ndim == 1:
@@ -43,13 +44,10 @@ def make_grid(
             shape[0] + 1,
             shape[1] + 1,
             shape[2] + 1,
-            limits[0][0],
-            limits[0][1],
-            limits[1][0],
-            limits[1][1],
-            limits[2][0],
-            limits[2][1],
         )
+        grid.setGridX(limits[0][0], limits[0][1])
+        grid.setGridY(limits[1][0], limits[1][1])
+        grid.setGridZ(limits[2][0], limits[2][1])
     else:
         raise ValueError
 
@@ -89,12 +87,16 @@ class BunchHistogram(Diagnostic):
         limits: list[tuple[float, float]],
         method: str = None,
         transform: Callable = None,
+        normalize: bool = True,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
 
         self.axis = axis
         self.ndim = len(axis)
+
+        if self.ndim > 2:
+            raise NotImplementedError("BunchHistogram does not yet support 3D grids. See https://github.com/PyORBIT-Collaboration/PyORBIT3/issues/46 and https://github.com/PyORBIT-Collaboration/PyORBIT3/issues/47.")
 
         self.dims = ["x", "xp", "y", "yp", "z", "dE"]
         self.dims = [self.dims[i] for i in self.axis]
@@ -111,9 +113,10 @@ class BunchHistogram(Diagnostic):
         self.points = get_grid_points(self.coords)
         self.cell_volume = np.prod([e[1] - e[0] for e in self.edges])
 
-        self.grid = make_grid(axis=self.axis, shape=self.shape, limits=self.limits)
+        self.grid = make_grid(self.shape, self.limits)
         self.method = method
         self.transform = transform
+        self.normalize = normalize
     
     def reset(self) -> None:
         self.grid.setZero()
@@ -121,11 +124,17 @@ class BunchHistogram(Diagnostic):
     def sync_mpi(self) -> None:
         self.grid.synchronizeMPI(self.mpi_comm)
 
-    def bin_bunch(self, bunch: Bunch) -> None:
+    def bin_bunch(self, bunch: Bunch) -> None:     
+        macrosize = bunch.macroSize()
+        if macrosize == 0:
+            bunch.macroSize(1.0)
+            
         if self.method == "bilinear":
             self.grid.binBunchBilinear(bunch, *self.axis)
         else:
             self.grid.binBunch(bunch, *self.axis)
+
+        bunch.macroSize(macrosize)
 
     def compute_histogram(self, bunch: Bunch) -> np.ndarray:
         self.bin_bunch(bunch)
@@ -142,6 +151,12 @@ class BunchHistogram(Diagnostic):
             for i, indices in enumerate(np.ndindex(*self.shape)):
                 values[i] = self.grid.getValueOnGrid(*indices)
         values = np.reshape(values, self.shape)
+
+        if self.normalize:
+            values_sum = np.sum(values)
+            if values_sum > 0.0:
+                values /= values_sum
+            values /= self.cell_volume
         return values
     
     def track(self, params_dict: dict) -> None:
@@ -152,13 +167,8 @@ class BunchHistogram(Diagnostic):
         if self.transform is not None:
             bunch_copy = self.transform(bunch_copy)
 
-        values = self.compute_histogram(bunch_copy)
-        values_sum = np.sum(values)
-        if values_sum > 0.0:
-            values /= values_sum
-        values /= self.cell_volume
-
-        self.values = values
+        self.reset()
+        self.values = self.compute_histogram(bunch_copy)
 
         if self.output_dir is not None:
             array = xr.DataArray(self.values, coords=self.coords, dims=self.dims)
