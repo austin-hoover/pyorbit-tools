@@ -1,5 +1,5 @@
 hydra-core
-matplotlib>=3.9.2
+matplotlib>=3.9.2<3.10
 numpy>=2.1.1
 omegaconf>=2.3.0
 pandas>=2.2.3
