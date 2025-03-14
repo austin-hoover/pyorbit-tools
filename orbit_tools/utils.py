@@ -30,14 +30,10 @@ def get_perveance(mass: float, kin_energy: float, line_density: float) -> float:
     return perveance
 
 
-def get_intensity_from_perveance(
-    perveance: float, mass: float, kin_energy: float, length: float
-):
+def get_intensity_from_perveance(perveance: float, mass: float, kin_energy: float, length: float):
     gamma, beta = get_lorentz_factors(mass, kin_energy)
     classical_proton_radius = CLASSICAL_PROTON_RADIUS
-    intensity = (beta**2 * gamma**3 * perveance * length) / (
-        2.0 * classical_proton_radius
-    )
+    intensity = (beta**2 * gamma**3 * perveance * length) / (2.0 * classical_proton_radius)
     return intensity
 
 

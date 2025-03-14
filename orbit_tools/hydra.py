@@ -12,9 +12,7 @@ class GitSHACallback(Callback):
         repo = git.Repo(search_parent_directories=True)
         sha = repo.head.object.hexsha
 
-        output_dir = os.path.join(
-            config.hydra.runtime.output_dir, config.hydra.output_subdir
-        )
+        output_dir = os.path.join(config.hydra.runtime.output_dir, config.hydra.output_subdir)
         filename = os.path.join(output_dir, "git_sha.txt")
 
         with open(filename, "w") as file:

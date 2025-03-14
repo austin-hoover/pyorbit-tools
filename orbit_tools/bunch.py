@@ -62,9 +62,7 @@ def get_bunch_coords(bunch: Bunch, axis: tuple[int, ...] = None) -> np.ndarray:
     return X[:, axis]
 
 
-def set_bunch_coords(
-    bunch: Bunch, X: np.ndarray, axis: tuple[int, ...] = None
-) -> Bunch:
+def set_bunch_coords(bunch: Bunch, X: np.ndarray, axis: tuple[int, ...] = None) -> Bunch:
     if axis is None:
         axis = tuple(range(6))
 
@@ -123,9 +121,7 @@ def shift_bunch_centroid(bunch: Bunch, offset: np.ndarray) -> Bunch:
     return bunch
 
 
-def set_bunch_cov(
-    bunch: Bunch, covariance_matrix: np.ndarray, block_diag: bool = True
-) -> Bunch:
+def set_bunch_cov(bunch: Bunch, covariance_matrix: np.ndarray, block_diag: bool = True) -> Bunch:
     X_old = get_bunch_coords(bunch)
     S_old = np.cov(X_old.T)
 
@@ -144,9 +140,7 @@ def set_bunch_cov(
     return bunch
 
 
-def transform_bunch(
-    bunch: Bunch, transform: Callable, axis: tuple[int, ...] = None
-) -> Bunch:
+def transform_bunch(bunch: Bunch, transform: Callable, axis: tuple[int, ...] = None) -> Bunch:
     if axis is None:
         axis = tuple(range(6))
 
@@ -155,9 +149,7 @@ def transform_bunch(
     return set_bunch_coords(bunch, X)
 
 
-def transform_bunch_linear(
-    bunch: Bunch, matrix: np.ndarray, axis: tuple[int, ...] = None
-) -> Bunch:
+def transform_bunch_linear(bunch: Bunch, matrix: np.ndarray, axis: tuple[int, ...] = None) -> Bunch:
     return transform_bunch(bunch, lambda x: np.matmul(x, matrix.T), axis=axis)
 
 
@@ -178,9 +170,7 @@ def set_bunch_current(bunch: Bunch, current: float, frequency: float) -> Bunch:
 
     Assumes bunch charge is already set.
     """
-    intensity = current_to_intensity(
-        current=current, frequency=frequency, charge=bunch.charge()
-    )
+    intensity = current_to_intensity(current=current, frequency=frequency, charge=bunch.charge())
     bunch_size_global = bunch.getSizeGlobal()
     if bunch_size_global > 0:
         macro_size = intensity / bunch_size_global
@@ -323,9 +313,7 @@ def get_bunch_cov(
     return S
 
 
-def generate_bunch(
-    sample: Callable, size: int, bunch: Bunch = None, verbose: bool = True
-) -> Bunch:
+def generate_bunch(sample: Callable, size: int, bunch: Bunch = None, verbose: bool = True) -> Bunch:
     """Generate bunch from particle sampler..
 
     Parameters

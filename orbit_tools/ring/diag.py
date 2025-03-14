@@ -104,9 +104,7 @@ class BunchMonitor(RingDiagnostic):
         order = 2
         dispersion_flag = 0
         emit_norm_flag = 0
-        twiss_analysis.computeBunchMoments(
-            bunch, order, dispersion_flag, emit_norm_flag
-        )
+        twiss_analysis.computeBunchMoments(bunch, order, dispersion_flag, emit_norm_flag)
         for i in range(6):
             key = "mean_{}".format(i)
             value = twiss_analysis.getAverage(i)
@@ -143,9 +141,7 @@ class BunchMonitor(RingDiagnostic):
 
         # Measure maximum phase space amplitudes
         extrema_calculator = BunchExtremaCalculator()
-        (x_min, x_max, y_min, y_max, z_min, z_max) = extrema_calculator.extremaXYZ(
-            bunch
-        )
+        (x_min, x_max, y_min, y_max, z_min, z_max) = extrema_calculator.extremaXYZ(bunch)
         if self.mpi_rank == 0:
             self.history["x_min"] = x_min
             self.history["x_max"] = x_max

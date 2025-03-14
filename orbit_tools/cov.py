@@ -99,9 +99,7 @@ def normalization_matrix_from_twiss_2d(
     return np.linalg.inv(V)
 
 
-def normalization_matrix_from_twiss(
-    twiss_params: list[tuple[float, float, float]]
-) -> np.ndarray:
+def normalization_matrix_from_twiss(twiss_params: list[tuple[float, float, float]]) -> np.ndarray:
     """2N x 2N block-diagonal normalization matrix from Twiss parameters.
 
     Parameters
@@ -117,9 +115,7 @@ def normalization_matrix_from_twiss(
     ndim = len(twiss_params) // 2
     V = np.zeros((ndim, ndim))
     for i in range(0, ndim, 2):
-        V[i : i + 2, i : i + 2] = normalization_matrix_from_twiss_2d(
-            *twiss_params[i : i + 2]
-        )
+        V[i : i + 2, i : i + 2] = normalization_matrix_from_twiss_2d(*twiss_params[i : i + 2])
     return np.linalg.inv(V)
 
 
@@ -175,9 +171,7 @@ def cov_to_corr(S: np.ndarray) -> np.ndarray:
     return np.linalg.multi_dot([Dinv, S, Dinv])
 
 
-def rms_ellipse_params(
-    S: np.ndarray, axis: tuple[int, ...] = None
-) -> tuple[float, ...]:
+def rms_ellipse_params(S: np.ndarray, axis: tuple[int, ...] = None) -> tuple[float, ...]:
     """Return projected rms ellipse dimensions and orientation.
 
     Parameters
