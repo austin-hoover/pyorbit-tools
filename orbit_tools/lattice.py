@@ -15,22 +15,14 @@ from orbit.lattice import AccLattice
 
 def get_sublattice(
     lattice: AccLattice,
-    start: Union[int, str] = None,
-    stop: Union[int, str] = None,
+    start: int | str = None,
+    stop: int | str = None,
 ) -> AccLattice:
-
-    def get_index(argument: Union[int, str], default: int = 0) -> int:
-        index = default
-        if type(argument) is str:
-            name = argument
-            index = lattice.getNodeIndex(lattice.getNodeForName(node_name))
-        else:
-            index = argument
-        return index
-
-    start_index = get_index(start, default=0)
-    stop_index = get_index(stop, default=-1)
-    return lattice.getSubLattice(start_index, stop_index)
+    if type(start) is str:
+        start = lattice.getNodeIndex(lattice.getNodeForName(start))
+    if type(stop) is str:
+        stop = lattice.getNodeIndex(lattice.getNodeForName(stop))
+    return lattice.getSubLattice(start, stop)
 
 
 def split_node(node: AccNode, max_part_length: float = None) -> AccNode:
