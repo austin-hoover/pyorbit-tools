@@ -50,7 +50,7 @@ class LinacDiagnostic(Diagnostic):
 
     def reset(self) -> None:
         self.position = self.position_old = self.position_start
-        self.index = index_start
+        self.index = self.index_start
         self.node = None
 
     def __call__(self, params_dict: dict, force_update: bool = False) -> None:
