@@ -6,6 +6,7 @@ from typing import Callable
 from typing import Union
 
 import numpy as np
+import xarray as xr
 
 from orbit.core import orbit_mpi
 from orbit.core.bunch import Bunch
