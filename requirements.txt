@@ -1,5 +1,5 @@
 hydra-core
-matplotlib>=3.9.2<3.10
+matplotlib==3.9.2
 numpy>=2.1.1
 omegaconf>=2.3.0
 pandas>=2.2.3
@@ -8,4 +8,4 @@ scipy>=1.14.1
 tqdm>=4.66.5
 xarray>=2025.1.2
 
-# pyorbit @ git+https://github.com/PyORBIT-Collaboration/PyORBIT3.git@709a5cca42d7a0773fb1a98776933bed5fce120c
+# pyorbit @ git+https://github.com/PyORBIT-Collaboration/PyORBIT3.git@v3.0.0
