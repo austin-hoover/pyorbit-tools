@@ -8,10 +8,3 @@
 ```
 pip install -e .
 ```
-
-
-## Run tests
-
-```
-pytest tests
-```
