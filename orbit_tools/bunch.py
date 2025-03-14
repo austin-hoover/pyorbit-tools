@@ -18,6 +18,14 @@ from orbit.utils.consts import charge_electron
 from .cov import normalization_matrix
 
 
+def set_particle_macrosizes(bunch: Bunch, macrosizes: Iterable) -> Bunch:
+    bunch.addPartAttr("macrosize")  # sets macrosize=0 for all particles
+    attribute_array_index = 0
+    for index in range(bunch.getSize()):
+        bunch.partAttrValue("macrosize", index, attribute_array_index, macrosizes[index])
+    return bunch
+
+
 def get_part_coords(bunch: Bunch, index: int) -> list[float]:
     x = bunch.x(index)
     y = bunch.y(index)

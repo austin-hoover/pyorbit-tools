@@ -126,3 +126,12 @@ def test_generate_bunch():
 def test_get_bunch_twiss_containers():
     bunch = make_gaussian_bunch()
     twiss_x, twiss_y, twiss_z = ot.bunch.get_bunch_twiss_containers(bunch)
+    
+
+def test_set_particle_macrosizes():
+    bunch = make_gaussian_bunch()
+    macrosizes = list(range(bunch.getSize()))
+    bunch = ot.bunch.set_particle_macrosizes(bunch, macrosizes)
+    for i, macrosize in enumerate(macrosizes):
+        assert macrosize == bunch.partAttrValue("macrosize", i, 0) 
+
