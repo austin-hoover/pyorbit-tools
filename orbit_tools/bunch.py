@@ -405,7 +405,7 @@ class WrappedBunch:
 
     def update_macrosize(self) -> None:
         if self.current is not None and self.frequency is not None:
-            set_current(self.bunch, self.current, self.frequency)
+            set_bunch_current(self.bunch, self.current, self.frequency)
 
     def set_current(self, current: float) -> None:
         self.current = current
