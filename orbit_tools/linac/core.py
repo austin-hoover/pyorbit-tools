@@ -802,7 +802,7 @@ class LinacTransform:
         u_new[:, self.axis] = u_new
 
         bunch = self.get_new_bunch()
-        bunch = oset_bunch_coords(bunch, u_new, verbose=False)
+        bunch = set_bunch_coords(bunch, u_new, verbose=False)
         bunch = reverse_bunch(bunch)
         self.lattice.reverseOrder()
         self.lattice.trackBunch(bunch, index_start=self.index_stop, index_stop=self.index_start)
