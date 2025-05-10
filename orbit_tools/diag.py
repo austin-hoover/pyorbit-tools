@@ -92,6 +92,7 @@ class BunchHistogram(Diagnostic):
     ) -> None:
         super().__init__(**kwargs)
 
+        self.index =0
         self.axis = axis
         self.ndim = len(axis)
 
@@ -175,6 +176,8 @@ class BunchHistogram(Diagnostic):
         if self.output_dir is not None:
             array = xr.DataArray(self.values, coords=self.coords, dims=self.dims)
             array.to_netcdf(path=self.get_filename())
+
+        self.index += 1
 
     def get_filename(self) -> str:
         filename = "hist_" + "-".join([str(i) for i in self.axis])
