@@ -80,6 +80,7 @@ class Diagnostic:
 
 
 class BunchHistogram(Diagnostic):
+    """MPI-compatible bunch histogram."""
     def __init__(
         self,
         axis: tuple[int, ...],
