@@ -92,6 +92,7 @@ class BunchHistogram(Diagnostic):
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
+        
         self.node = None
         self.index =0
         self.axis = axis
@@ -168,6 +169,7 @@ class BunchHistogram(Diagnostic):
         bunch = params_dict["bunch"]
         node = params_dict["node"]
         bunch.copyBunchTo(bunch_copy)
+        self.node = node
 
         if self.transform is not None:
             bunch_copy = self.transform(bunch_copy)
